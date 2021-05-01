@@ -7,9 +7,13 @@ Apply KPConv (Kernel point convolution) for the task of shape segmentation based
 TODOs:
  - Get PartNet dataset from https://shapenet.org/download/parts 
  - script to load dataset
- - Model architecture
+ - Model architecture (maybe focus on just the rigid one for now)
  - train / evaluation code
  - experiments to achieve the same performance presented in the paper
  - write up report in latex
+
+
+References:
+https://zhuanlan.zhihu.com/p/92244933
 
 
