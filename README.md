@@ -9,5 +9,7 @@ TODOs:
  - script to load dataset
  - Model architecture
  - train / evaluation code
- - experiements to achieve the same performance presented in the paper
+ - experiments to achieve the same performance presented in the paper
  - write up report in latex
+
+
