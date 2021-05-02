@@ -1,0 +1,11 @@
+name: kpconv
+channels:
+  - pytorch
+  - defaults
+dependencies:
+  - python=3
+  - numpy
+  - pytorch
+  - torchvision
+  - torchaudio
+  - cudatoolkit=11.0
