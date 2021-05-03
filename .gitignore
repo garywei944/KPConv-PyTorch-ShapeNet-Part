@@ -1,5 +1,10 @@
-data/
-models/
+data/*
+!data/README.md
+models/*
+!models/README.md
+test/test/*
+!test/test/.gitkeep
+
 .idea/
 
 # Byte-compiled / optimized / DLL files
