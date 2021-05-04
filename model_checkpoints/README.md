@@ -1,0 +1,1 @@
+This folder stores the checkpoints of the trained models
