@@ -3,6 +3,9 @@
 
 Apply KPConv (Kernel point convolution) for the task of shape segmentation based on the PartNet dataset
 
+## Structure of the project
+Please refer to the document of [Cookiecutter Data Science](https://drivendata.github.io/cookiecutter-data-science/#starting-a-new-project) for the structure of the project.
+
 ## TODO
 - Get PartNet dataset from https://shapenet.org/download/parts
 - script to load dataset
@@ -15,5 +18,4 @@ Apply KPConv (Kernel point convolution) for the task of shape segmentation based
 ## References
 * [KPConv: Flexible and Deformable Convolution for Point Clouds](https://arxiv.org/pdf/1904.08889.pdf)
 * [HuguesTHOMAS/KPConv](https://github.com/HuguesTHOMAS/KPConv)
-* [KPConv：点云核心点卷积 (ICCV 2019)
-](https://zhuanlan.zhihu.com/p/92244933)
+* [KPConv：点云核心点卷积 (ICCV 2019)](https://zhuanlan.zhihu.com/p/92244933)

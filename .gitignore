@@ -1,7 +1,13 @@
+# data
 data/*
 !data/README.md
+!data/*/
+data/*/*
+!data/*/.gitkeep
+
 models/*
 !models/README.md
+
 test/test/*
 !test/test/.gitkeep
 
