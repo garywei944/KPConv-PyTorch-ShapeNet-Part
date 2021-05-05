@@ -3,9 +3,10 @@ channels:
   - pytorch
   - defaults
 dependencies:
-  - python=3
   - numpy
   - jupyter
+
+  # PyTorch
   - pytorch
   - torchvision
   - torchaudio
