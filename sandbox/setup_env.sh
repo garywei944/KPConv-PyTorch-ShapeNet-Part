@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-conda env create -f environment.yml
+#conda env create -f environment.yml
+#conda activate kpconv
 
 TORCH=$(python -c "import torch; print(torch.__version__)")
 CUDA=$(python -c "import torch; print(torch.version.cuda)" | sed -ne 's/\.//gp')
