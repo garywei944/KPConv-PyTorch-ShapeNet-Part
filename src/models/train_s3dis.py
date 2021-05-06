@@ -33,6 +33,8 @@ from src.config.config import Config
 from src.models.trainer import ModelTrainer
 from src.models.architectures import KPFCNN
 
+import multiprocessing
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -59,7 +61,7 @@ class S3DISConfig(Config):
     dataset_task = ''
 
     # Number of CPU threads for the input pipeline
-    input_threads = 32
+    input_threads = multiprocessing.cpu_count()
 
     #########################
     # Architecture definition
@@ -94,13 +96,15 @@ class S3DISConfig(Config):
     ###################
 
     # Radius of the input sphere
-    in_radius = 1.5
+    # in_radius = 1.5
+    in_radius = 0.5
 
     # Number of kernel points
     num_kernel_points = 15
 
     # Size of the first subsampling grid in meter
-    first_subsampling_dl = 0.03
+    # first_subsampling_dl = 0.03
+    first_subsampling_dl = 0.06
 
     # Radius of convolution in "number grid cell". (2.5 is the standard value)
     conv_radius = 2.5
@@ -194,8 +198,7 @@ if __name__ == '__main__':
     ############################
 
     # Set which gpu is going to be used
-    # GPU_ID = '0'
-    GPU_ID = 'cpu'
+    GPU_ID = '0'
 
     # Set GPU visible device
     os.environ['CUDA_VISIBLE_DEVICES'] = GPU_ID
@@ -304,5 +307,5 @@ if __name__ == '__main__':
     # Training
     trainer.train(net, training_loader, test_loader, config)
 
-    print('Forcing exit now')
-    os.kill(os.getpid(), signal.SIGINT)
+    # print('Forcing exit now')
+    # os.kill(os.getpid(), signal.SIGINT)
