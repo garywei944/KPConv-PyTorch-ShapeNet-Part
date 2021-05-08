@@ -34,7 +34,7 @@ from src.models.trainer import ModelTrainer
 from src.models.architectures import KPFCNN
 
 import multiprocessing
-import yaml
+from ruamel import yaml
 import argparse
 
 
@@ -79,6 +79,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('-c', '--config', type=str,
                         help='the yml config file in config folder')
+    parser.add_argument('-p', '--saving-path', type=str,
+                        help='the path to save the results')
 
     args = parser.parse_args()
 
@@ -135,8 +137,7 @@ if __name__ == '__main__':
         config.saving_path = None
 
     # Get path from argument if given
-    if len(sys.argv) > 1:
-        config.saving_path = sys.argv[1]
+    config.saving_path = args.saving_path
 
     # Initialize datasets
     training_dataset = S3DISDataset(config, set='training', use_potentials=True)
