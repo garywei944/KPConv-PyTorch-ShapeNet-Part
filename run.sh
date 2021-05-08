@@ -3,8 +3,8 @@
 # Activate the virtual environment
 . ./.venv/bin/activate
 
-# Train S3DIS dataset with configuration file `./config/s3dis_2060.yml`
-python -m src.models.train_s3dis -c s3dis_2060.yml
+# Train S3DIS dataset
+python -m src.models.train_s3dis
 
 ## Plot the loss, time, and IoU
 #python -m src.visualization.plot_convergence
