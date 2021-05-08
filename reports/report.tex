@@ -1,15 +1,49 @@
-%! Author = aris
-%! Date = 5/4/21
+\title{3D Part Segmentation with Kernel Point Convolution}
+\author{ Genglin Liu \and Gary Wei}
+\date{\today}
+\documentclass[11pt,twocolumn,letterpaper]{article}
+\usepackage[style=numeric, sorting=none]{biblatex}
+\addbibresource{reference.bib}
 
-% Preamble
-\documentclass[11pt]{article}
-
-% Packages
-\usepackage{amsmath}
-
-% Document
 \begin{document}
+\maketitle
+
+% The report should include a short introduction (max 1 page including the abstract)
+
+% related work (~1 column i.e., half page),
+
+% description of your method and architecture (e.g., 2 pages), 
+
+% and experimental evaluation with figures/plots (1-2 pages).
+
+% References are extra pages (after page 5) - they don't count in the 5-page report.
+
+\begin{abstract}
+    3D cloud segmentation is a popular problem in stereo computer vision and graphics. This problem can be solved using 3D/geometric deep learning, and we will investigate this problem by employing the current state-of-art arcitecture kernel point convolution (KPConv). We replicate the experiment on Stanford S3DIS indoor scene dataset presented in the original KPConv paper, and evaluate this network on a new dataset, PartNet, using our own data loading and evaluation pipeline. 
+\end{abstract}
+
+\section{Introduction}
+
+Accurately and efficiently processing 3D objects has been gaining popularity in 3D deep learning community and we believe that it has strong potential in real-world applications such as supporting the autonomous driving systems. The goal of our course project is to investigate the shape segmentation problem and implement noval architectures to improve the segmentation performance. We plan to apply one of the most advanced networks architectures, kernel point convolution (KPConv) for the task of 3D shape segmentation on the PartNet dataset. We will perform segmentation on point cloud data. Since semantic segmentation tends to be more widely applied to outdoor scenes and we're mostly interested in the 3D part labeling of individual objects, we will focus on part segmentation in this project.
 
 
+\section{Related Work}
+% You may briefly describe prior work related to your project e.g., what is (are) the paper(s) you are going to follow/use/re-implement?
+
+There have been numerous studies on 3D shape segmentation. In as early as 2010, Kalogerakis et al \cite{Kalogerakis_mesh_seg} have presented data-driven methods to learn 3D mesh segmentation and labeling. Recently, we also see approaches that project 3D images to 2D space and perform segmentation using the existing 2D image segmentation models \cite{lyu2020learning} . These type of models project 3D objects onto the 2D planes and treat them with 2D models such as U-Net. We have more view-based approaches with high performances such as ShapePFCN by Kalogerakis et al \cite{kalogerakis20173d}. We also inspect point-based methods such as PointCNN \cite{li2018pointcnn} and SplatNet \cite{su2018splatnet} which specifically operates on point clouds, and then there is the current State-of-the-Art in ShapeNet-Part benchmark, KPConv with deformable Convolutions \cite{thomas2019kpconv}. We will spend most of our time studying KPConv and replicating the study in PyTorch.
+
+\section{Methodology}
+In this work, we collaboratively build our pipeline or re-implement the chosen paper and we will discuss the split of work more specifically when we get to the coding part. Since naturally there is a pipeline to be implemented, one of us will focus on the data collection/preprocessing whereas the other person will focus on the model training script and evaluation. And we will both record experiment results, generate visuals such as tables and plots, and contribute to the final report write-up. We will most likely be collaborating through in-person study sessions and GitHub. 
+
+
+\section{Experiments and Evaluation}
+
+
+We will be using PartNet as our dataset of interest. PartNet originated from a research group at Stanford and it was published at CVPR 2019. It is a consistent, large-scale dataset of 3D objects with fine-grained and instance-level annotation. It also contains hierarchical 3D part information. This dataset consists of 573,585 part instances over 26,671 3D models covering 24 object categories. There are three benchmarking tasks for evaluating 3D part recognition: fine-grained semantic segmentation, hierarchical semantic segmentation, and instance segmentation. 
+
+To evaluate our deep learning models on segmentation tasks, we will use two common performance metrics, mAP and mIoU. AP (Average Precision) calculates the pixel-level prediction precision, where precision = $\frac{TP}{TP + FP}$. mAP (Mean Average Precision) takes the average of AP across all class labels. Another performance metric we have in mind is Intersection-Over-Union(IoU). IoU computes the area of overlap between the predicted segmentation and the ground truth divided by the area of union between the predicted segmentation and the ground truth. For this multi-class problem, we will use the mean IoU (mIoU) to evalutate our model.
+
+
+\printbibliography
 
 \end{document}

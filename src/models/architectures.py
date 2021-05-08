@@ -14,7 +14,7 @@
 #      Hugues THOMAS - 06/03/2020
 #
 
-from models.blocks import *
+from src.models.blocks import *
 import numpy as np
 
 

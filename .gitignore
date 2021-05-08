@@ -4,12 +4,16 @@ data/*
 !data/*/
 data/*/*
 !data/*/.gitkeep
+*.ply
 
 models/*
 !models/README.md
 
 test/test/*
 !test/test/.gitkeep
+
+# Results
+results
 
 .idea/
 
@@ -142,3 +146,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# vscode
+.vscode
