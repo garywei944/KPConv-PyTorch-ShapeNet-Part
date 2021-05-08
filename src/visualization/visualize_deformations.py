@@ -29,13 +29,13 @@ import sys
 import torch
 
 # Dataset
-from datasets.ModelNet40 import *
-from datasets.S3DIS import *
+# from datasets.ModelNet40 import *
+from src.features.s3dis import *
 from torch.utils.data import DataLoader
 
-from utils.config import Config
-from utils.visualizer import ModelVisualizer
-from models.architectures import KPCNN, KPFCNN
+from src.config.config import Config
+from src.visualization.visualizer import ModelVisualizer
+from src.models.architectures import KPCNN, KPFCNN
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -45,7 +45,6 @@ from models.architectures import KPCNN, KPFCNN
 #
 
 def model_choice(chosen_log):
-
     ###########################
     # Call the test initializer
     ###########################
@@ -57,7 +56,9 @@ def model_choice(chosen_log):
         test_dataset = '_'.join(chosen_log.split('_')[1:])
 
         # List all training logs
-        logs = np.sort([os.path.join('results', f) for f in os.listdir('results') if f.startswith('Log')])
+        logs = np.sort(
+            [os.path.join('results', f) for f in os.listdir('results') if
+             f.startswith('Log')])
 
         # Find the last log of asked dataset
         for log in logs[::-1]:
@@ -68,7 +69,8 @@ def model_choice(chosen_log):
                 break
 
         if chosen_log in ['last_ModelNet40', 'last_ShapeNetPart', 'last_S3DIS']:
-            raise ValueError('No log of the dataset "' + test_dataset + '" found')
+            raise ValueError(
+                'No log of the dataset "' + test_dataset + '" found')
 
     # Check if log exists
     if not os.path.exists(chosen_log):
@@ -94,7 +96,7 @@ if __name__ == '__main__':
     #       > 'last_XXX': Automatically retrieve the last trained model on dataset XXX
     #       > 'results/Log_YYYY-MM-DD_HH-MM-SS': Directly provide the path of a trained model
 
-    chosen_log = 'results/Log_2020-04-23_19-42-18'
+    chosen_log = 'last_S3DIS'
 
     # Choose the index of the checkpoint to load OR None if you want to load the current checkpoint
     chkp_idx = None
@@ -154,12 +156,14 @@ if __name__ == '__main__':
     print('****************')
 
     # Initiate dataset
-    if config.dataset.startswith('ModelNet40'):
-        test_dataset = ModelNet40Dataset(config, train=False)
-        test_sampler = ModelNet40Sampler(test_dataset)
-        collate_fn = ModelNet40Collate
-    elif config.dataset == 'S3DIS':
-        test_dataset = S3DISDataset(config, set='validation', use_potentials=True)
+    # if config.dataset.startswith('ModelNet40'):
+    #     test_dataset = ModelNet40Dataset(config, train=False)
+    #     test_sampler = ModelNet40Sampler(test_dataset)
+    #     collate_fn = ModelNet40Collate
+    # elif config.dataset == 'S3DIS':
+    if config.dataset == 'S3DIS':
+        test_dataset = S3DISDataset(config, set='validation',
+                                    use_potentials=True)
         test_sampler = S3DISSampler(test_dataset)
         collate_fn = S3DISCollate
     else:
@@ -184,12 +188,15 @@ if __name__ == '__main__':
     if config.dataset_task == 'classification':
         net = KPCNN(config)
     elif config.dataset_task in ['cloud_segmentation', 'slam_segmentation']:
-        net = KPFCNN(config, test_dataset.label_values, test_dataset.ignored_labels)
+        net = KPFCNN(config, test_dataset.label_values,
+                     test_dataset.ignored_labels)
     else:
-        raise ValueError('Unsupported dataset_task for deformation visu: ' + config.dataset_task)
+        raise ValueError(
+            'Unsupported dataset_task for deformation visu: ' + config.dataset_task)
 
     # Define a visualizer class
-    visualizer = ModelVisualizer(net, config, chkp_path=chosen_chkp, on_gpu=False)
+    visualizer = ModelVisualizer(net, config, chkp_path=chosen_chkp,
+                                 on_gpu=False)
     print('Done in {:.1f}s\n'.format(time.time() - t1))
 
     print('\nStart visualization')
@@ -197,6 +204,3 @@ if __name__ == '__main__':
 
     # Training
     visualizer.show_deformable_kernels(net, test_loader, config, deform_idx)
-
-
-

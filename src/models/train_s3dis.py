@@ -35,6 +35,7 @@ from src.models.architectures import KPFCNN
 
 import multiprocessing
 import yaml
+import argparse
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -74,6 +75,12 @@ class S3DISConfig(Config):
 #
 
 if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('-c', '--config', type=str,
+                        help='the yml config file in config folder')
+
+    args = parser.parse_args()
 
     ############################
     # Initialize the environment
@@ -122,7 +129,7 @@ if __name__ == '__main__':
     print('****************')
 
     # Initialize configuration class
-    config = S3DISConfig(config_file='s3dis_2060.yml')
+    config = S3DISConfig(config_file=args.config)
     if previous_training_path:
         config.load(os.path.join('results', previous_training_path))
         config.saving_path = None

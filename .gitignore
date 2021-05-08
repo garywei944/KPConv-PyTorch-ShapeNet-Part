@@ -1,19 +1,10 @@
 # data
-data/*
-!data/README.md
-!data/*/
-data/*/*
-!data/*/.gitkeep
 *.ply
 
-models/*
-!models/README.md
-
-test/test/*
-!test/test/.gitkeep
+test/
 
 # Results
-results
+results/
 
 .idea/
 

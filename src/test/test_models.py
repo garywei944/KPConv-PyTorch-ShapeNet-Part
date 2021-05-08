@@ -95,7 +95,7 @@ if __name__ == '__main__':
     #       > 'last_XXX': Automatically retrieve the last trained model on dataset XXX
     #       > '(old_)results/Log_YYYY-MM-DD_HH-MM-SS': Directly provide the path of a trained model
 
-    chosen_log = 'results/Log_2021-05-08_10-15-48'  # => ModelNet40
+    chosen_log = 'last_S3DIS'  # => ModelNet40
 
     # Choose the index of the checkpoint to load OR None if you want to load the current checkpoint
     chkp_idx = None
@@ -213,7 +213,8 @@ if __name__ == '__main__':
         tester.classification_test(net, test_loader, config)
     elif config.dataset_task == 'cloud_segmentation':
         # The default num_votes = 100 is just too long time to wait
-        tester.cloud_segmentation_test(net, test_loader, config, num_votes=10)
+        # num_vote=10 can't get an result within 73 epochs
+        tester.cloud_segmentation_test(net, test_loader, config, num_votes=1)
     elif config.dataset_task == 'slam_segmentation':
         tester.slam_segmentation_test(net, test_loader, config)
     else:
