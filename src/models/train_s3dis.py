@@ -122,7 +122,7 @@ if __name__ == '__main__':
     print('****************')
 
     # Initialize configuration class
-    config = S3DISConfig()
+    config = S3DISConfig(config_file='s3dis_2060.yml')
     if previous_training_path:
         config.load(os.path.join('results', previous_training_path))
         config.saving_path = None

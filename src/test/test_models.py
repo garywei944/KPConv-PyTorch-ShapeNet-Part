@@ -212,7 +212,8 @@ if __name__ == '__main__':
     if config.dataset_task == 'classification':
         tester.classification_test(net, test_loader, config)
     elif config.dataset_task == 'cloud_segmentation':
-        tester.cloud_segmentation_test(net, test_loader, config)
+        # The default num_votes = 100 is just too long time to wait
+        tester.cloud_segmentation_test(net, test_loader, config, num_votes=10)
     elif config.dataset_task == 'slam_segmentation':
         tester.slam_segmentation_test(net, test_loader, config)
     else:

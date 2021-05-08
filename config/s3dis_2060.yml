@@ -110,7 +110,8 @@ grad_clip_norm: 100.0
 batch_num: 3 # DIFF
 
 # Number of steps per epochs
-epoch_steps: 500
+#epoch_steps: 500
+epoch_steps: 300
 
 # Number of validation examples per epoch
 validation_size: 50

@@ -96,7 +96,7 @@ repulse_extent: 1.2                    # Distance of repulsion for deformed kern
 #####################
 
 # Maximal number of epochs
-max_epoch: 30
+max_epoch: 500
 
 # Learning rate management
 learning_rate: 1e-2
