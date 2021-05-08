@@ -717,8 +717,8 @@ def experiment_name_1():
     """
 
     # Using the dates of the logs, you can easily gather consecutive ones. All logs should be of the same dataset.
-    start = 'Log_2021-05-06_11-00-00'
-    end = 'Log_2021-05-06_12-00-00'
+    start = 'Log_2021-05-06_00-00-00'
+    end = 'Log_2022-05-11_12-00-00'
 
     # Name of the result path
     res_path = 'results'
@@ -785,9 +785,9 @@ if __name__ == '__main__':
         if config.dataset.startswith('S3DIS'):
             dataset = S3DISDataset(config, load_data=False)
             compare_convergences_segment(dataset, logs, logs_names)
-    elif config.dataset_task == 'slam_segmentation':
-        if config.dataset.startswith('SemanticKitti'):
-            dataset = SemanticKittiDataset(config)
-            compare_convergences_SLAM(dataset, logs, logs_names)
+    # elif config.dataset_task == 'slam_segmentation':
+    #     if config.dataset.startswith('SemanticKitti'):
+    #         dataset = SemanticKittiDataset(config)
+    #         compare_convergences_SLAM(dataset, logs, logs_names)
     else:
         raise ValueError('Unsupported dataset : ' + plot_dataset)
