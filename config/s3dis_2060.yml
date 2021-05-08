@@ -2,6 +2,8 @@
 # Dataset parameters
 ####################
 
+# Difference to the s3dis_baseline are marked with DIFF
+
 # Dataset name
 dataset: 'S3DIS'
 
@@ -12,7 +14,7 @@ num_classes: null
 dataset_task: ''
 
 # Number of CPU threads for the input pipeline
-input_threads: 10
+input_threads: 32 # DIFF
 
 #########################
 # Architecture definition
@@ -49,7 +51,7 @@ architecture: [
 ###################
 
 # Radius of the input sphere
-in_radius: 1.5
+in_radius: 1.0 # DIFF
 
 # Number of kernel points
 num_kernel_points: 15
@@ -105,7 +107,7 @@ momentum: 0.98
 grad_clip_norm: 100.0
 
 # Number of batch
-batch_num: 6
+batch_num: 3 # DIFF
 
 # Number of steps per epochs
 epoch_steps: 500
