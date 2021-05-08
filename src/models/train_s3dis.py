@@ -97,14 +97,13 @@ class S3DISConfig(Config):
 
     # Radius of the input sphere
     # in_radius = 1.5
-    in_radius = 0.5
+    in_radius = 1.0
 
     # Number of kernel points
     num_kernel_points = 15
 
     # Size of the first subsampling grid in meter
-    # first_subsampling_dl = 0.03
-    first_subsampling_dl = 0.06
+    first_subsampling_dl = 0.03
 
     # Radius of convolution in "number grid cell". (2.5 is the standard value)
     conv_radius = 2.5
@@ -154,7 +153,7 @@ class S3DISConfig(Config):
     grad_clip_norm = 100.0
 
     # Number of batch
-    batch_num = 6
+    batch_num = 3
 
     # Number of steps per epochs
     epoch_steps = 500
