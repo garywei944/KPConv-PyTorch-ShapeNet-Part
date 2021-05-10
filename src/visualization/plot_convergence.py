@@ -782,7 +782,7 @@ if __name__ == '__main__':
     if config.dataset_task == 'classification':
         compare_convergences_classif(logs, logs_names)
     elif config.dataset_task == 'cloud_segmentation':
-        if config.dataset.startswith('S3DIS'):
+        if config.dataset.startswith('S3DIS') or config.dataset.startswith('ShapeNetPart'):
             dataset = S3DISDataset(config, load_data=False)
             compare_convergences_segment(dataset, logs, logs_names)
     # elif config.dataset_task == 'slam_segmentation':
