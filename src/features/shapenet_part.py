@@ -664,11 +664,22 @@ class ShapeNetPartDataset(PointCloudDataset):
         if not exists(tree_path):
             makedirs(tree_path)
 
-        for i, cloud_name in enumerate(self.cloud_names):
-            label_file = os.path.join(self.path, 'points_label',
-                                      cloud_name + '.seg')
-            labels = np.loadtxt(label_file)
-            self.input_labels += [labels]
+        label_file = join(tree_path, 'label.pkl')
+        if exists(label_file):
+            print('\nFound label for all clouds')
+            # Read pkl with search tree
+            with open(label_file, 'rb') as f:
+                self.input_labels = pickle.load(f)
+        else:
+            print('Preparing label for clouds.')
+            for i, cloud_name in enumerate(self.cloud_names):
+                label_file = os.path.join(self.path, 'points_label',
+                                          cloud_name + '.seg')
+                labels = np.loadtxt(label_file)
+                self.input_labels += [labels]
+            # Save KDTree
+            with open(label_file, 'wb') as f:
+                pickle.dump(self.input_labels, f)
 
         ##############
         # Load KDTrees
@@ -688,7 +699,6 @@ class ShapeNetPartDataset(PointCloudDataset):
                 self.pot_trees = tree
 
         else:
-
             print('Preparing KDTree for clouds.')
             for i, cloud_name in enumerate(self.cloud_names):
                 # Restart timer
