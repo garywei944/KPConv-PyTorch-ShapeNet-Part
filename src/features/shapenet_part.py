@@ -116,7 +116,7 @@ class ShapeNetPartDataset(PointCloudDataset):
 
         # Dict from labels to names, where all names is just the index
         self.label_to_names = dict(
-            zip(*[list(range(ctg_num_classes[train_category]))] * 2))
+            zip(*[list(range(1, ctg_num_classes[train_category] + 1))] * 2))
 
         # Initialize a bunch of variables concerning class labels
         self.init_labels()
@@ -169,7 +169,7 @@ class ShapeNetPartDataset(PointCloudDataset):
 
         # Initiate containers
         self.input_trees = []
-        # self.input_colors = []
+        self.input_colors = []
         self.input_labels = []
         self.pot_trees = []
         self.num_clouds = 0
@@ -363,10 +363,12 @@ class ShapeNetPartDataset(PointCloudDataset):
             # Collect labels and colors
             input_points = (points[input_inds] - center_point).astype(
                 np.float32)
-            # input_colors = self.input_colors[cloud_ind][input_inds]
+            input_colors = self.input_colors[cloud_ind][input_inds]
             if self.set in ['test', 'ERF']:
                 input_labels = np.zeros(input_points.shape[0])
             else:
+                # print(cloud_ind, input_inds.shape,
+                #       self.input_labels[cloud_ind].shape)
                 input_labels = self.input_labels[cloud_ind][input_inds]
                 input_labels = np.array(
                     [self.label_to_idx[l] for l in input_labels])
@@ -381,9 +383,10 @@ class ShapeNetPartDataset(PointCloudDataset):
             #     input_colors *= 0
 
             # Get original height as additional feature
-            input_features = np.hstack(
-                (input_points[:, 2:] + center_point[:, 2:],)).astype(
-                np.float32)  # (n, 1)
+            input_features = np.hstack((input_colors,
+                                        input_points[:, 2:] + center_point[:,
+                                                              2:])).astype(
+                np.float32)
 
             t += [time.time()]
 
@@ -427,15 +430,13 @@ class ShapeNetPartDataset(PointCloudDataset):
         stacked_features = np.ones_like(stacked_points[:, :1], dtype=np.float32)
         if self.config.in_features_dim == 1:
             pass
-        elif self.config.in_features_dim == 2:
+        elif self.config.in_features_dim == 4:
+            stacked_features = np.hstack((stacked_features, features[:, :3]))
+        elif self.config.in_features_dim == 5:
             stacked_features = np.hstack((stacked_features, features))
-        # elif self.config.in_features_dim == 4:
-        #     stacked_features = np.hstack((stacked_features, features[:, :3]))
-        # elif self.config.in_features_dim == 5:
-        #     stacked_features = np.hstack((stacked_features, features))
         else:
             raise ValueError(
-                'Only accepted input dimensions are 1 and 2 (without and with XYZ)')
+                'Only accepted input dimensions are 1, 4 and 7 (without and with XYZ)')
 
         #######################
         # Create network inputs
@@ -570,7 +571,7 @@ class ShapeNetPartDataset(PointCloudDataset):
             # Collect labels and colors
             input_points = (points[input_inds] - center_point).astype(
                 np.float32)
-            # input_colors = self.input_colors[cloud_ind][input_inds]
+            input_colors = self.input_colors[cloud_ind][input_inds]
             if self.set in ['test', 'ERF']:
                 input_labels = np.zeros(input_points.shape[0])
             else:
@@ -581,13 +582,15 @@ class ShapeNetPartDataset(PointCloudDataset):
             # Data augmentation
             input_points, scale, R = self.augmentation_transform(input_points)
 
-            # # Color augmentation
-            # if np.random.rand() > self.config.augment_color:
-            #     input_colors *= 0
+            # Color augmentation
+            if np.random.rand() > self.config.augment_color:
+                input_colors *= 0
 
             # Get original height as additional feature
-            input_features = np.hstack(
-                (input_points[:, 2:] + center_point[:, 2:],)).astype(np.float32)
+            input_features = np.hstack((input_colors,
+                                        input_points[:, 2:] + center_point[:,
+                                                              2:])).astype(
+                np.float32)
 
             # Stack batch
             p_list += [input_points]
@@ -629,15 +632,13 @@ class ShapeNetPartDataset(PointCloudDataset):
         stacked_features = np.ones_like(stacked_points[:, :1], dtype=np.float32)
         if self.config.in_features_dim == 1:
             pass
-        elif self.config.in_features_dim == 2:
+        elif self.config.in_features_dim == 4:
+            stacked_features = np.hstack((stacked_features, features[:, :3]))
+        elif self.config.in_features_dim == 5:
             stacked_features = np.hstack((stacked_features, features))
-        # elif self.config.in_features_dim == 4:
-        #     stacked_features = np.hstack((stacked_features, features[:, :3]))
-        # elif self.config.in_features_dim == 5:
-        #     stacked_features = np.hstack((stacked_features, features))
         else:
             raise ValueError(
-                'Only accepted input dimensions are 1 and 2 (without and with XYZ)')
+                'Only accepted input dimensions are 1, 4 and 7 (without and with XYZ)')
 
         #######################
         # Create network inputs
@@ -682,6 +683,8 @@ class ShapeNetPartDataset(PointCloudDataset):
             with open(KDTree_file, 'rb') as f:
                 tree = pickle.load(f)
                 self.input_trees = tree
+                self.input_colors = [np.zeros(tree[i].get_arrays()[0].shape) for
+                                     i in range(len(tree))]
                 self.pot_trees = tree
 
         else:
@@ -704,6 +707,7 @@ class ShapeNetPartDataset(PointCloudDataset):
 
                 # Fill data containers
                 self.input_trees += [search_tree]
+                self.input_colors += [np.zeros(points.shape)]
                 self.pot_trees += [search_tree]
 
                 # size = points.shape[0] * 4 * 7
@@ -769,14 +773,14 @@ class ShapeNetPartDataset(PointCloudDataset):
         print()
         return
 
-    def load_evaluation_points(self, file_path):
-        """
-        Load points (from test or validation split) on which the metrics should be evaluated
-        """
-
-        # Get original points
-        data = read_ply(file_path)
-        return np.vstack((data['x'], data['y'], data['z'])).T
+    # def load_evaluation_points(self, file_path):
+    #     """
+    #     Load points (from test or validation split) on which the metrics should be evaluated
+    #     """
+    #
+    #     # Get original points
+    #     data = read_ply(file_path)
+    #     return np.vstack((data['x'], data['y'], data['z'])).T
 
 
 # ----------------------------------------------------------------------------------------------------------------------

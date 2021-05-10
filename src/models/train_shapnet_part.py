@@ -124,7 +124,7 @@ class ShapeNetPartConfig(Config):
 
     # Choice of input features
     first_features_dim = 128
-    in_features_dim = 2
+    in_features_dim = 4
 
     # Can the network learn modulations
     modulated = False
