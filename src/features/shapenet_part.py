@@ -109,7 +109,7 @@ class ShapeNetPartDataset(PointCloudDataset):
         # Dataset folder
         assert os.getenv('SHAPENETPART_PATH'), \
             "Please set up the environment variable SHAPENETPART_PATH in a .env file!"
-        assert ctg_path_dict[train_category],\
+        assert ctg_path_dict[train_category], \
             "The category contains too few samples to perform the task"
         dataset_path = os.environ['SHAPENETPART_PATH']
         self.path = os.path.join(dataset_path, ctg_path_dict[train_category])
@@ -140,19 +140,6 @@ class ShapeNetPartDataset(PointCloudDataset):
         # Using potential or random epoch generation
         self.use_potentials = use_potentials
 
-        # Path of the training files
-        self.train_path = 'original_ply'
-
-        # List of files to process
-        ply_path = join(self.path, self.train_path)
-
-        # Proportion of validation scenes
-        files = os.listdir(os.path.join(self.path, 'points'))
-        for i, name_ in enumerate(files):
-            files[i] = name_.split('.')[0]
-        # self.all_splits = [0, 1, 2, 3, 4, 5]
-        # self.validation_split = 4
-
         # Number of models used per epoch
         if self.set == 'training':
             self.epoch_n = config.epoch_steps * config.batch_num
@@ -165,38 +152,20 @@ class ShapeNetPartDataset(PointCloudDataset):
         if not load_data:
             return
 
-        ###################
-        # Prepare ply files
-        ###################
-
-        self.prepare_ShapeNetPart_ply()
-
-        ################
-        # Load ply files
-        ################
+        # Proportion of validation scenes
+        files = os.listdir(os.path.join(self.path, 'points'))
+        for i, name_ in enumerate(files):
+            files[i] = name_.split('.')[0]
 
         # List of training files
-        self.files = []
-        for i, f in enumerate(self.cloud_names):
-            if self.set == 'training':
-                if self.all_splits[i] != self.validation_split:
-                    self.files += [join(ply_path, f + '.ply')]
-            elif self.set in ['validation', 'test', 'ERF']:
-                if self.all_splits[i] == self.validation_split:
-                    self.files += [join(ply_path, f + '.ply')]
-            else:
-                raise ValueError('Unknown set for S3DIS data: ', self.set)
+        indices_ = np.arange(len(files))
+        np.random.shuffle(indices_)
+        train_idx, test_idx = np.split(indices_, [len(indices_) * 8 // 10])
 
         if self.set == 'training':
-            self.cloud_names = [f for i, f in enumerate(self.cloud_names)
-                                if self.all_splits[i] != self.validation_split]
-        elif self.set in ['validation', 'test', 'ERF']:
-            self.cloud_names = [f for i, f in enumerate(self.cloud_names)
-                                if self.all_splits[i] == self.validation_split]
-
-        if 0 < self.config.first_subsampling_dl <= 0.01:
-            raise ValueError(
-                'subsampling_parameter too low (should be over 1 cm')
+            self.cloud_names = files[train_idx]
+        else:
+            self.cloud_names = files[test_idx]
 
         # Initiate containers
         self.input_trees = []
@@ -206,9 +175,6 @@ class ShapeNetPartDataset(PointCloudDataset):
         self.num_clouds = 0
         self.test_proj = []
         self.validation_labels = []
-
-        # Start loading
-        self.load_subsampled_clouds()
 
         ############################
         # Batch selection parameters
@@ -688,99 +654,9 @@ class ShapeNetPartDataset(PointCloudDataset):
 
         return input_list
 
-    def prepare_ShapeNetPart_ply(self):
-
-        print('\nPreparing ply files')
-        t0 = time.time()
-
-        # Folder for the ply files
-        ply_path = join(self.path, self.train_path)
-        if not exists(ply_path):
-            makedirs(ply_path)
-
-        for cloud_name in self.cloud_names:
-
-            # Pass if the cloud has already been computed
-            cloud_file = join(ply_path, cloud_name + '.ply')
-            if exists(cloud_file):
-                continue
-
-            # Get rooms of the current cloud
-            cloud_folder = join(self.path, cloud_name)
-            room_folders = [join(cloud_folder, room) for room in
-                            listdir(cloud_folder) if
-                            isdir(join(cloud_folder, room))]
-
-            # Initiate containers
-            cloud_points = np.empty((0, 3), dtype=np.float32)
-            cloud_colors = np.empty((0, 3), dtype=np.uint8)
-            cloud_classes = np.empty((0, 1), dtype=np.int32)
-
-            # Loop over rooms
-            for i, room_folder in enumerate(room_folders):
-
-                print('Cloud %s - Room %d/%d : %s' % (
-                    cloud_name, i + 1, len(room_folders),
-                    room_folder.split('/')[-1]))
-
-                for object_name in listdir(join(room_folder, 'Annotations')):
-
-                    if object_name[-4:] == '.txt':
-
-                        # Text file containing point of the object
-                        object_file = join(room_folder, 'Annotations',
-                                           object_name)
-
-                        # Object class and ID
-                        tmp = object_name[:-4].split('_')[0]
-                        if tmp in self.name_to_label:
-                            object_class = self.name_to_label[tmp]
-                        elif tmp in ['stairs']:
-                            object_class = self.name_to_label['clutter']
-                        else:
-                            raise ValueError('Unknown object name: ' + str(tmp))
-
-                        # Correct bug in S3DIS dataset
-                        if object_name == 'ceiling_1.txt':
-                            with open(object_file, 'r') as f:
-                                lines = f.readlines()
-                            for l_i, line in enumerate(lines):
-                                if '103.0\x100000' in line:
-                                    lines[l_i] = line.replace('103.0\x100000',
-                                                              '103.000000')
-                            with open(object_file, 'w') as f:
-                                f.writelines(lines)
-
-                        # Read object points and colors
-                        object_data = np.loadtxt(object_file, dtype=np.float32)
-
-                        # Stack all data
-                        cloud_points = np.vstack((cloud_points,
-                                                  object_data[:, 0:3].astype(
-                                                      np.float32)))
-                        cloud_colors = np.vstack((cloud_colors,
-                                                  object_data[:, 3:6].astype(
-                                                      np.uint8)))
-                        object_classes = np.full((object_data.shape[0], 1),
-                                                 object_class, dtype=np.int32)
-                        cloud_classes = np.vstack(
-                            (cloud_classes, object_classes))
-
-            # Save as ply
-            write_ply(cloud_file,
-                      (cloud_points, cloud_colors, cloud_classes),
-                      ['x', 'y', 'z', 'red', 'green', 'blue', 'class'])
-
-        print('Done in {:.1f}s'.format(time.time() - t0))
-        return
-
     def load_subsampled_clouds(self):
-
-        # Parameter
-        dl = self.config.first_subsampling_dl
-
         # Create path for files
-        tree_path = join(self.path, 'input_{:.3f}'.format(dl))
+        tree_path = join(self.path, 'kdtree')
         if not exists(tree_path):
             makedirs(tree_path)
 
@@ -788,57 +664,33 @@ class ShapeNetPartDataset(PointCloudDataset):
         # Load KDTrees
         ##############
 
-        for i, file_path in enumerate(self.files):
+        for i, cloud_name in enumerate(self.cloud_names):
 
             # Restart timer
             t0 = time.time()
 
-            # Get cloud name
-            cloud_name = self.cloud_names[i]
-
             # Name of the input files
+            points_file = os.path.join(self.path, 'points', cloud_name + '.pts')
+            label_file = os.path.join(self.path, 'points_label',
+                                      cloud_name + '.seg')
             KDTree_file = join(tree_path, '{:s}_KDTree.pkl'.format(cloud_name))
-            sub_ply_file = join(tree_path, '{:s}.ply'.format(cloud_name))
+
+            points = np.loadtxt(points_file)
+            labels = np.loadtxt(label_file)
 
             # Check if inputs have already been computed
             if exists(KDTree_file):
-                print(
-                    '\nFound KDTree for cloud {:s}, subsampled at {:.3f}'.format(
-                        cloud_name, dl))
-
-                # read ply with data
-                data = read_ply(sub_ply_file)
-                sub_colors = np.vstack(
-                    (data['red'], data['green'], data['blue'])).T
-                sub_labels = data['class']
+                print('\nFound KDTree for cloud {:s}'.format(cloud_name))
 
                 # Read pkl with search tree
                 with open(KDTree_file, 'rb') as f:
                     search_tree = pickle.load(f)
 
             else:
-                print(
-                    '\nPreparing KDTree for cloud {:s}, subsampled at {:.3f}'.format(
-                        cloud_name, dl))
-
-                # Read ply file
-                data = read_ply(file_path)
-                points = np.vstack((data['x'], data['y'], data['z'])).T
-                colors = np.vstack((data['red'], data['green'], data['blue'])).T
-                labels = data['class']
-
-                # Subsample cloud
-                sub_points, sub_colors, sub_labels = grid_subsampling(points,
-                                                                      features=colors,
-                                                                      labels=labels,
-                                                                      sampleDl=dl)
-
-                # Rescale float color and squeeze label
-                sub_colors = sub_colors / 255
-                sub_labels = np.squeeze(sub_labels)
+                print('Preparing KDTree for cloud {:s}'.format(cloud_name))
 
                 # Get chosen neighborhoods
-                search_tree = KDTree(sub_points, leaf_size=10)
+                search_tree = KDTree(points, leaf_size=10)
                 # search_tree = nnfln.KDTree(n_neighbors=1, metric='L2', leaf_size=10)
                 # search_tree.fit(sub_points)
 
@@ -846,69 +698,14 @@ class ShapeNetPartDataset(PointCloudDataset):
                 with open(KDTree_file, 'wb') as f:
                     pickle.dump(search_tree, f)
 
-                # Save ply
-                write_ply(sub_ply_file,
-                          [sub_points, sub_colors, sub_labels],
-                          ['x', 'y', 'z', 'red', 'green', 'blue', 'class'])
-
             # Fill data containers
             self.input_trees += [search_tree]
-            self.input_colors += [sub_colors]
-            self.input_labels += [sub_labels]
+            self.pot_trees += [search_tree]
+            self.input_labels += [labels]
 
-            size = sub_colors.shape[0] * 4 * 7
+            size = points.shape[0] * 4 * 7
             print('{:.1f} MB loaded in {:.1f}s'.format(size * 1e-6,
                                                        time.time() - t0))
-
-        ############################
-        # Coarse potential locations
-        ############################
-
-        # Only necessary for validation and test sets
-        if self.use_potentials:
-            print('\nPreparing potentials')
-
-            # Restart timer
-            t0 = time.time()
-
-            pot_dl = self.config.in_radius / 10
-            cloud_ind = 0
-
-            for i, file_path in enumerate(self.files):
-
-                # Get cloud name
-                cloud_name = self.cloud_names[i]
-
-                # Name of the input files
-                coarse_KDTree_file = join(tree_path,
-                                          '{:s}_coarse_KDTree.pkl'.format(
-                                              cloud_name))
-
-                # Check if inputs have already been computed
-                if exists(coarse_KDTree_file):
-                    # Read pkl with search tree
-                    with open(coarse_KDTree_file, 'rb') as f:
-                        search_tree = pickle.load(f)
-
-                else:
-                    # Subsample cloud
-                    sub_points = np.array(self.input_trees[cloud_ind].data,
-                                          copy=False)
-                    coarse_points = grid_subsampling(
-                        sub_points.astype(np.float32), sampleDl=pot_dl)
-
-                    # Get chosen neighborhoods
-                    search_tree = KDTree(coarse_points, leaf_size=10)
-
-                    # Save KDTree
-                    with open(coarse_KDTree_file, 'wb') as f:
-                        pickle.dump(search_tree, f)
-
-                # Fill data containers
-                self.pot_trees += [search_tree]
-                cloud_ind += 1
-
-            print('Done in {:.1f}s'.format(time.time() - t0))
 
         ######################
         # Reprojection indices
@@ -923,13 +720,10 @@ class ShapeNetPartDataset(PointCloudDataset):
             print('\nPreparing reprojection indices for testing')
 
             # Get validation/test reprojection indices
-            for i, file_path in enumerate(self.files):
+            for i, cloud_name in enumerate(self.cloud_names):
 
                 # Restart timer
                 t0 = time.time()
-
-                # Get info on this cloud
-                cloud_name = self.cloud_names[i]
 
                 # File name for saving
                 proj_file = join(tree_path, '{:s}_proj.pkl'.format(cloud_name))
@@ -939,14 +733,17 @@ class ShapeNetPartDataset(PointCloudDataset):
                     with open(proj_file, 'rb') as f:
                         proj_inds, labels = pickle.load(f)
                 else:
-                    data = read_ply(file_path)
-                    points = np.vstack((data['x'], data['y'], data['z'])).T
-                    labels = data['class']
+                    points_file = os.path.join(self.path, 'points',
+                                               cloud_name + '.pts')
+                    points = np.loadtxt(points_file)
+                    labels = self.input_labels[i]
 
                     # Compute projection inds
                     idxs = self.input_trees[i].query(points,
                                                      return_distance=False)
                     # dists, idxs = self.input_trees[i_cloud].kneighbors(points)
+
+                    # TODO: BUG: why squeeze?
                     proj_inds = np.squeeze(idxs).astype(np.int32)
 
                     # Save
