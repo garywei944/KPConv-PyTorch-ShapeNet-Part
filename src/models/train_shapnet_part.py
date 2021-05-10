@@ -99,7 +99,7 @@ class ShapeNetPartConfig(Config):
     ###################
 
     # Radius of the input sphere
-    in_radius = 0.8
+    in_radius = 5e-2
 
     # Number of kernel points
     num_kernel_points = 15
@@ -124,7 +124,7 @@ class ShapeNetPartConfig(Config):
 
     # Choice of input features
     first_features_dim = 128
-    in_features_dim = 4
+    in_features_dim = 5
 
     # Can the network learn modulations
     modulated = False
@@ -149,13 +149,13 @@ class ShapeNetPartConfig(Config):
     max_epoch = 30
 
     # Learning rate management
-    learning_rate = 1e-2
+    learning_rate = 1e-5
     momentum = 0.98
     lr_decays = {i: 0.1 ** (1 / 150) for i in range(1, max_epoch)}
     grad_clip_norm = 100.0
 
     # Number of batch
-    batch_num = 3
+    batch_num = 12
 
     # Number of steps per epochs
     epoch_steps = 300

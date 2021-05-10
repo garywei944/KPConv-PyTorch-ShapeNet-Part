@@ -158,14 +158,14 @@ class ShapeNetPartDataset(PointCloudDataset):
             files[i] = name_.split('.')[0]
 
         # List of training files
-        indices_ = np.arange(len(files))
-        np.random.shuffle(indices_)
-        train_idx, test_idx = np.split(indices_, [len(indices_) * 8 // 10])
+        self.all_splits = np.arange(len(files))
+        np.random.shuffle(self.all_splits)
+        train_idx, self.validation_split = np.split(self.all_splits, [len(self.all_splits) * 8 // 10])
 
         if self.set == 'training':
             self.cloud_names = files[train_idx]
         else:
-            self.cloud_names = files[test_idx]
+            self.cloud_names = files[self.validation_split]
 
         # Initiate containers
         self.input_trees = []
@@ -770,7 +770,7 @@ class ShapeNetPartDataset(PointCloudDataset):
                     proj_inds = np.squeeze(idxs).astype(np.int32)
 
                     proj_inds_list.append(proj_inds)
-                    labels_list.append(labels_list)
+                    labels_list.append(labels)
 
                 # Save
                 with open(proj_file, 'wb') as f:
