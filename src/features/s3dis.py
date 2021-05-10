@@ -381,7 +381,7 @@ class S3DISDataset(PointCloudDataset):
             input_features = np.hstack((input_colors,
                                         input_points[:, 2:] + center_point[:,
                                                               2:])).astype(
-                np.float32)
+                np.float32) # (4620, 4)
 
             t += [time.time()]
 

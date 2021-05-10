@@ -153,7 +153,7 @@ class ShapeNetPartDataset(PointCloudDataset):
             return
 
         # Proportion of validation scenes
-        files = os.listdir(os.path.join(self.path, 'points'))
+        files = np.array(os.listdir(os.path.join(self.path, 'points')))
         for i, name_ in enumerate(files):
             files[i] = name_.split('.')[0]
 
@@ -169,12 +169,14 @@ class ShapeNetPartDataset(PointCloudDataset):
 
         # Initiate containers
         self.input_trees = []
-        self.input_colors = []
+        # self.input_colors = []
         self.input_labels = []
         self.pot_trees = []
         self.num_clouds = 0
         self.test_proj = []
         self.validation_labels = []
+
+        self.load_subsampled_clouds()
 
         ############################
         # Batch selection parameters
@@ -361,7 +363,7 @@ class ShapeNetPartDataset(PointCloudDataset):
             # Collect labels and colors
             input_points = (points[input_inds] - center_point).astype(
                 np.float32)
-            input_colors = self.input_colors[cloud_ind][input_inds]
+            # input_colors = self.input_colors[cloud_ind][input_inds]
             if self.set in ['test', 'ERF']:
                 input_labels = np.zeros(input_points.shape[0])
             else:
@@ -374,15 +376,14 @@ class ShapeNetPartDataset(PointCloudDataset):
             # Data augmentation
             input_points, scale, R = self.augmentation_transform(input_points)
 
-            # Color augmentation
-            if np.random.rand() > self.config.augment_color:
-                input_colors *= 0
+            # # Color augmentation
+            # if np.random.rand() > self.config.augment_color:
+            #     input_colors *= 0
 
             # Get original height as additional feature
-            input_features = np.hstack((input_colors,
-                                        input_points[:, 2:] + center_point[:,
-                                                              2:])).astype(
-                np.float32)
+            input_features = np.hstack(
+                (input_points[:, 2:] + center_point[:, 2:],)).astype(
+                np.float32)  # (n, 1)
 
             t += [time.time()]
 
@@ -426,13 +427,15 @@ class ShapeNetPartDataset(PointCloudDataset):
         stacked_features = np.ones_like(stacked_points[:, :1], dtype=np.float32)
         if self.config.in_features_dim == 1:
             pass
-        elif self.config.in_features_dim == 4:
-            stacked_features = np.hstack((stacked_features, features[:, :3]))
-        elif self.config.in_features_dim == 5:
+        elif self.config.in_features_dim == 2:
             stacked_features = np.hstack((stacked_features, features))
+        # elif self.config.in_features_dim == 4:
+        #     stacked_features = np.hstack((stacked_features, features[:, :3]))
+        # elif self.config.in_features_dim == 5:
+        #     stacked_features = np.hstack((stacked_features, features))
         else:
             raise ValueError(
-                'Only accepted input dimensions are 1, 4 and 7 (without and with XYZ)')
+                'Only accepted input dimensions are 1 and 2 (without and with XYZ)')
 
         #######################
         # Create network inputs
@@ -567,7 +570,7 @@ class ShapeNetPartDataset(PointCloudDataset):
             # Collect labels and colors
             input_points = (points[input_inds] - center_point).astype(
                 np.float32)
-            input_colors = self.input_colors[cloud_ind][input_inds]
+            # input_colors = self.input_colors[cloud_ind][input_inds]
             if self.set in ['test', 'ERF']:
                 input_labels = np.zeros(input_points.shape[0])
             else:
@@ -578,15 +581,13 @@ class ShapeNetPartDataset(PointCloudDataset):
             # Data augmentation
             input_points, scale, R = self.augmentation_transform(input_points)
 
-            # Color augmentation
-            if np.random.rand() > self.config.augment_color:
-                input_colors *= 0
+            # # Color augmentation
+            # if np.random.rand() > self.config.augment_color:
+            #     input_colors *= 0
 
             # Get original height as additional feature
-            input_features = np.hstack((input_colors,
-                                        input_points[:, 2:] + center_point[:,
-                                                              2:])).astype(
-                np.float32)
+            input_features = np.hstack(
+                (input_points[:, 2:] + center_point[:, 2:],)).astype(np.float32)
 
             # Stack batch
             p_list += [input_points]
@@ -628,13 +629,15 @@ class ShapeNetPartDataset(PointCloudDataset):
         stacked_features = np.ones_like(stacked_points[:, :1], dtype=np.float32)
         if self.config.in_features_dim == 1:
             pass
-        elif self.config.in_features_dim == 4:
-            stacked_features = np.hstack((stacked_features, features[:, :3]))
-        elif self.config.in_features_dim == 5:
+        elif self.config.in_features_dim == 2:
             stacked_features = np.hstack((stacked_features, features))
+        # elif self.config.in_features_dim == 4:
+        #     stacked_features = np.hstack((stacked_features, features[:, :3]))
+        # elif self.config.in_features_dim == 5:
+        #     stacked_features = np.hstack((stacked_features, features))
         else:
             raise ValueError(
-                'Only accepted input dimensions are 1, 4 and 7 (without and with XYZ)')
+                'Only accepted input dimensions are 1 and 2 (without and with XYZ)')
 
         #######################
         # Create network inputs
@@ -660,52 +663,56 @@ class ShapeNetPartDataset(PointCloudDataset):
         if not exists(tree_path):
             makedirs(tree_path)
 
+        for i, cloud_name in enumerate(self.cloud_names):
+            label_file = os.path.join(self.path, 'points_label',
+                                      cloud_name + '.seg')
+            labels = np.loadtxt(label_file)
+            self.input_labels += [labels]
+
         ##############
         # Load KDTrees
         ##############
 
-        for i, cloud_name in enumerate(self.cloud_names):
+        # Check if inputs have already been computed
+        KDTree_file = join(tree_path, 'KDTree.pkl')
+        if exists(KDTree_file):
+            print('\nFound KDTree for all clouds')
 
-            # Restart timer
-            t0 = time.time()
+            # Read pkl with search tree
+            with open(KDTree_file, 'rb') as f:
+                tree = pickle.load(f)
+                self.input_trees = tree
+                self.pot_trees = tree
 
-            # Name of the input files
-            points_file = os.path.join(self.path, 'points', cloud_name + '.pts')
-            label_file = os.path.join(self.path, 'points_label',
-                                      cloud_name + '.seg')
-            KDTree_file = join(tree_path, '{:s}_KDTree.pkl'.format(cloud_name))
+        else:
 
-            points = np.loadtxt(points_file)
-            labels = np.loadtxt(label_file)
+            print('Preparing KDTree for clouds.')
+            for i, cloud_name in enumerate(self.cloud_names):
+                # Restart timer
+                t0 = time.time()
 
-            # Check if inputs have already been computed
-            if exists(KDTree_file):
-                print('\nFound KDTree for cloud {:s}'.format(cloud_name))
+                # Name of the input files
+                points_file = os.path.join(self.path, 'points',
+                                           cloud_name + '.pts')
 
-                # Read pkl with search tree
-                with open(KDTree_file, 'rb') as f:
-                    search_tree = pickle.load(f)
-
-            else:
-                print('Preparing KDTree for cloud {:s}'.format(cloud_name))
+                points = np.loadtxt(points_file)
 
                 # Get chosen neighborhoods
                 search_tree = KDTree(points, leaf_size=10)
                 # search_tree = nnfln.KDTree(n_neighbors=1, metric='L2', leaf_size=10)
                 # search_tree.fit(sub_points)
 
-                # Save KDTree
-                with open(KDTree_file, 'wb') as f:
-                    pickle.dump(search_tree, f)
+                # Fill data containers
+                self.input_trees += [search_tree]
+                self.pot_trees += [search_tree]
 
-            # Fill data containers
-            self.input_trees += [search_tree]
-            self.pot_trees += [search_tree]
-            self.input_labels += [labels]
+                # size = points.shape[0] * 4 * 7
+                # print('{:.1f} MB loaded in {:.1f}s'.format(size * 1e-6,
+                #                                            time.time() - t0))
 
-            size = points.shape[0] * 4 * 7
-            print('{:.1f} MB loaded in {:.1f}s'.format(size * 1e-6,
-                                                       time.time() - t0))
+            # Save KDTree
+            with open(KDTree_file, 'wb') as f:
+                pickle.dump(self.input_trees, f)
 
         ######################
         # Reprojection indices
@@ -719,20 +726,22 @@ class ShapeNetPartDataset(PointCloudDataset):
 
             print('\nPreparing reprojection indices for testing')
 
-            # Get validation/test reprojection indices
-            for i, cloud_name in enumerate(self.cloud_names):
+            # File name for saving
+            proj_file = join(tree_path, 'proj.pkl')
+            # Restart timer
+            t0 = time.time()
 
-                # Restart timer
-                t0 = time.time()
+            # Try to load previous indices
+            if exists(proj_file):
+                with open(proj_file, 'rb') as f:
+                    proj_inds_list, labels_list = pickle.load(f)
 
-                # File name for saving
-                proj_file = join(tree_path, '{:s}_proj.pkl'.format(cloud_name))
+            else:
+                proj_inds_list = []
+                labels_list = []
 
-                # Try to load previous indices
-                if exists(proj_file):
-                    with open(proj_file, 'rb') as f:
-                        proj_inds, labels = pickle.load(f)
-                else:
+                # Get validation/test reprojection indices
+                for i, cloud_name in enumerate(self.cloud_names):
                     points_file = os.path.join(self.path, 'points',
                                                cloud_name + '.pts')
                     points = np.loadtxt(points_file)
@@ -746,14 +755,16 @@ class ShapeNetPartDataset(PointCloudDataset):
                     # TODO: BUG: why squeeze?
                     proj_inds = np.squeeze(idxs).astype(np.int32)
 
-                    # Save
-                    with open(proj_file, 'wb') as f:
-                        pickle.dump([proj_inds, labels], f)
+                    proj_inds_list.append(proj_inds)
+                    labels_list.append(labels_list)
 
-                self.test_proj += [proj_inds]
-                self.validation_labels += [labels]
-                print(
-                    '{:s} done in {:.1f}s'.format(cloud_name, time.time() - t0))
+                # Save
+                with open(proj_file, 'wb') as f:
+                    pickle.dump((proj_inds_list, labels_list), f)
+
+            self.test_proj = proj_inds_list
+            self.validation_labels = labels_list
+            print('reprojection done in {:.1f}s'.format(time.time() - t0))
 
         print()
         return
@@ -774,10 +785,10 @@ class ShapeNetPartDataset(PointCloudDataset):
 #       \********************************/
 
 
-class S3DISSampler(Sampler):
+class ShapeNetPartSampler(Sampler):
     """Sampler for S3DIS"""
 
-    def __init__(self, dataset: S3DISDataset):
+    def __init__(self, dataset: ShapeNetPartDataset):
         Sampler.__init__(self, dataset)
 
         # Dataset used by the sampler (no copy is made in memory)
@@ -1205,7 +1216,7 @@ class S3DISSampler(Sampler):
         return
 
 
-class S3DISCustomBatch:
+class ShapeNetPartCustomBatch:
     """Custom batch definition with memory pinning for S3DIS"""
 
     def __init__(self, input_list):
@@ -1352,178 +1363,178 @@ class S3DISCustomBatch:
         return all_p_list
 
 
-def S3DISCollate(batch_data):
-    return S3DISCustomBatch(batch_data)
-
-
-# ----------------------------------------------------------------------------------------------------------------------
+def ShapeNetPartCollate(batch_data):
+    return ShapeNetPartCustomBatch(batch_data)
 #
-#           Debug functions
-#       \*********************/
-
-
-def debug_upsampling(dataset, loader):
-    """Shows which labels are sampled according to strategy chosen"""
-
-    for epoch in range(10):
-
-        for batch_i, batch in enumerate(loader):
-            pc1 = batch.points[1].numpy()
-            pc2 = batch.points[2].numpy()
-            up1 = batch.upsamples[1].numpy()
-
-            print(pc1.shape, '=>', pc2.shape)
-            print(up1.shape, np.max(up1))
-
-            pc2 = np.vstack((pc2, np.zeros_like(pc2[:1, :])))
-
-            # Get neighbors distance
-            p0 = pc1[10, :]
-            neighbs0 = up1[10, :]
-            neighbs0 = pc2[neighbs0, :] - p0
-            d2 = np.sum(neighbs0 ** 2, axis=1)
-
-            print(neighbs0.shape)
-            print(neighbs0[:5])
-            print(d2[:5])
-
-            print('******************')
-        print('*******************************************')
-
-    _, counts = np.unique(dataset.input_labels, return_counts=True)
-    print(counts)
-
-
-def debug_timing(dataset, loader):
-    """Timing of generator function"""
-
-    t = [time.time()]
-    last_display = time.time()
-    mean_dt = np.zeros(2)
-    estim_b = dataset.config.batch_num
-    estim_N = 0
-
-    for epoch in range(10):
-
-        for batch_i, batch in enumerate(loader):
-            # print(batch_i, tuple(points.shape),  tuple(normals.shape), labels, indices, in_sizes)
-
-            # New time
-            t = t[-1:]
-            t += [time.time()]
-
-            # Update estim_b (low pass filter)
-            estim_b += (len(batch.cloud_inds) - estim_b) / 100
-            estim_N += (batch.features.shape[0] - estim_N) / 10
-
-            # Pause simulating computations
-            time.sleep(0.05)
-            t += [time.time()]
-
-            # Average timing
-            mean_dt = 0.9 * mean_dt + 0.1 * (np.array(t[1:]) - np.array(t[:-1]))
-
-            # Console display (only one per second)
-            if (t[-1] - last_display) > -1.0:
-                last_display = t[-1]
-                message = 'Step {:08d} -> (ms/batch) {:8.2f} {:8.2f} / batch = {:.2f} - {:.0f}'
-                print(message.format(batch_i,
-                                     1000 * mean_dt[0],
-                                     1000 * mean_dt[1],
-                                     estim_b,
-                                     estim_N))
-
-        print('************* Epoch ended *************')
-
-    _, counts = np.unique(dataset.input_labels, return_counts=True)
-    print(counts)
-
-
-def debug_show_clouds(dataset, loader):
-    for epoch in range(10):
-
-        clouds = []
-        cloud_normals = []
-        cloud_labels = []
-
-        L = dataset.config.num_layers
-
-        for batch_i, batch in enumerate(loader):
-
-            # Print characteristics of input tensors
-            print('\nPoints tensors')
-            for i in range(L):
-                print(batch.points[i].dtype, batch.points[i].shape)
-            print('\nNeigbors tensors')
-            for i in range(L):
-                print(batch.neighbors[i].dtype, batch.neighbors[i].shape)
-            print('\nPools tensors')
-            for i in range(L):
-                print(batch.pools[i].dtype, batch.pools[i].shape)
-            print('\nStack lengths')
-            for i in range(L):
-                print(batch.lengths[i].dtype, batch.lengths[i].shape)
-            print('\nFeatures')
-            print(batch.features.dtype, batch.features.shape)
-            print('\nLabels')
-            print(batch.labels.dtype, batch.labels.shape)
-            print('\nAugment Scales')
-            print(batch.scales.dtype, batch.scales.shape)
-            print('\nAugment Rotations')
-            print(batch.rots.dtype, batch.rots.shape)
-            print('\nModel indices')
-            print(batch.model_inds.dtype, batch.model_inds.shape)
-
-            print('\nAre input tensors pinned')
-            print(batch.neighbors[0].is_pinned())
-            print(batch.neighbors[-1].is_pinned())
-            print(batch.points[0].is_pinned())
-            print(batch.points[-1].is_pinned())
-            print(batch.labels.is_pinned())
-            print(batch.scales.is_pinned())
-            print(batch.rots.is_pinned())
-            print(batch.model_inds.is_pinned())
-
-            show_input_batch(batch)
-
-        print('*******************************************')
-
-    _, counts = np.unique(dataset.input_labels, return_counts=True)
-    print(counts)
-
-
-def debug_batch_and_neighbors_calib(dataset, loader):
-    """Timing of generator function"""
-
-    t = [time.time()]
-    last_display = time.time()
-    mean_dt = np.zeros(2)
-
-    for epoch in range(10):
-
-        for batch_i, input_list in enumerate(loader):
-            # print(batch_i, tuple(points.shape),  tuple(normals.shape), labels, indices, in_sizes)
-
-            # New time
-            t = t[-1:]
-            t += [time.time()]
-
-            # Pause simulating computations
-            time.sleep(0.01)
-            t += [time.time()]
-
-            # Average timing
-            mean_dt = 0.9 * mean_dt + 0.1 * (np.array(t[1:]) - np.array(t[:-1]))
-
-            # Console display (only one per second)
-            if (t[-1] - last_display) > 1.0:
-                last_display = t[-1]
-                message = 'Step {:08d} -> Average timings (ms/batch) {:8.2f} {:8.2f} '
-                print(message.format(batch_i,
-                                     1000 * mean_dt[0],
-                                     1000 * mean_dt[1]))
-
-        print('************* Epoch ended *************')
-
-    _, counts = np.unique(dataset.input_labels, return_counts=True)
-    print(counts)
+#
+# # ----------------------------------------------------------------------------------------------------------------------
+# #
+# #           Debug functions
+# #       \*********************/
+#
+#
+# def debug_upsampling(dataset, loader):
+#     """Shows which labels are sampled according to strategy chosen"""
+#
+#     for epoch in range(10):
+#
+#         for batch_i, batch in enumerate(loader):
+#             pc1 = batch.points[1].numpy()
+#             pc2 = batch.points[2].numpy()
+#             up1 = batch.upsamples[1].numpy()
+#
+#             print(pc1.shape, '=>', pc2.shape)
+#             print(up1.shape, np.max(up1))
+#
+#             pc2 = np.vstack((pc2, np.zeros_like(pc2[:1, :])))
+#
+#             # Get neighbors distance
+#             p0 = pc1[10, :]
+#             neighbs0 = up1[10, :]
+#             neighbs0 = pc2[neighbs0, :] - p0
+#             d2 = np.sum(neighbs0 ** 2, axis=1)
+#
+#             print(neighbs0.shape)
+#             print(neighbs0[:5])
+#             print(d2[:5])
+#
+#             print('******************')
+#         print('*******************************************')
+#
+#     _, counts = np.unique(dataset.input_labels, return_counts=True)
+#     print(counts)
+#
+#
+# def debug_timing(dataset, loader):
+#     """Timing of generator function"""
+#
+#     t = [time.time()]
+#     last_display = time.time()
+#     mean_dt = np.zeros(2)
+#     estim_b = dataset.config.batch_num
+#     estim_N = 0
+#
+#     for epoch in range(10):
+#
+#         for batch_i, batch in enumerate(loader):
+#             # print(batch_i, tuple(points.shape),  tuple(normals.shape), labels, indices, in_sizes)
+#
+#             # New time
+#             t = t[-1:]
+#             t += [time.time()]
+#
+#             # Update estim_b (low pass filter)
+#             estim_b += (len(batch.cloud_inds) - estim_b) / 100
+#             estim_N += (batch.features.shape[0] - estim_N) / 10
+#
+#             # Pause simulating computations
+#             time.sleep(0.05)
+#             t += [time.time()]
+#
+#             # Average timing
+#             mean_dt = 0.9 * mean_dt + 0.1 * (np.array(t[1:]) - np.array(t[:-1]))
+#
+#             # Console display (only one per second)
+#             if (t[-1] - last_display) > -1.0:
+#                 last_display = t[-1]
+#                 message = 'Step {:08d} -> (ms/batch) {:8.2f} {:8.2f} / batch = {:.2f} - {:.0f}'
+#                 print(message.format(batch_i,
+#                                      1000 * mean_dt[0],
+#                                      1000 * mean_dt[1],
+#                                      estim_b,
+#                                      estim_N))
+#
+#         print('************* Epoch ended *************')
+#
+#     _, counts = np.unique(dataset.input_labels, return_counts=True)
+#     print(counts)
+#
+#
+# def debug_show_clouds(dataset, loader):
+#     for epoch in range(10):
+#
+#         clouds = []
+#         cloud_normals = []
+#         cloud_labels = []
+#
+#         L = dataset.config.num_layers
+#
+#         for batch_i, batch in enumerate(loader):
+#
+#             # Print characteristics of input tensors
+#             print('\nPoints tensors')
+#             for i in range(L):
+#                 print(batch.points[i].dtype, batch.points[i].shape)
+#             print('\nNeigbors tensors')
+#             for i in range(L):
+#                 print(batch.neighbors[i].dtype, batch.neighbors[i].shape)
+#             print('\nPools tensors')
+#             for i in range(L):
+#                 print(batch.pools[i].dtype, batch.pools[i].shape)
+#             print('\nStack lengths')
+#             for i in range(L):
+#                 print(batch.lengths[i].dtype, batch.lengths[i].shape)
+#             print('\nFeatures')
+#             print(batch.features.dtype, batch.features.shape)
+#             print('\nLabels')
+#             print(batch.labels.dtype, batch.labels.shape)
+#             print('\nAugment Scales')
+#             print(batch.scales.dtype, batch.scales.shape)
+#             print('\nAugment Rotations')
+#             print(batch.rots.dtype, batch.rots.shape)
+#             print('\nModel indices')
+#             print(batch.model_inds.dtype, batch.model_inds.shape)
+#
+#             print('\nAre input tensors pinned')
+#             print(batch.neighbors[0].is_pinned())
+#             print(batch.neighbors[-1].is_pinned())
+#             print(batch.points[0].is_pinned())
+#             print(batch.points[-1].is_pinned())
+#             print(batch.labels.is_pinned())
+#             print(batch.scales.is_pinned())
+#             print(batch.rots.is_pinned())
+#             print(batch.model_inds.is_pinned())
+#
+#             show_input_batch(batch)
+#
+#         print('*******************************************')
+#
+#     _, counts = np.unique(dataset.input_labels, return_counts=True)
+#     print(counts)
+#
+#
+# def debug_batch_and_neighbors_calib(dataset, loader):
+#     """Timing of generator function"""
+#
+#     t = [time.time()]
+#     last_display = time.time()
+#     mean_dt = np.zeros(2)
+#
+#     for epoch in range(10):
+#
+#         for batch_i, input_list in enumerate(loader):
+#             # print(batch_i, tuple(points.shape),  tuple(normals.shape), labels, indices, in_sizes)
+#
+#             # New time
+#             t = t[-1:]
+#             t += [time.time()]
+#
+#             # Pause simulating computations
+#             time.sleep(0.01)
+#             t += [time.time()]
+#
+#             # Average timing
+#             mean_dt = 0.9 * mean_dt + 0.1 * (np.array(t[1:]) - np.array(t[:-1]))
+#
+#             # Console display (only one per second)
+#             if (t[-1] - last_display) > 1.0:
+#                 last_display = t[-1]
+#                 message = 'Step {:08d} -> Average timings (ms/batch) {:8.2f} {:8.2f} '
+#                 print(message.format(batch_i,
+#                                      1000 * mean_dt[0],
+#                                      1000 * mean_dt[1]))
+#
+#         print('************* Epoch ended *************')
+#
+#     _, counts = np.unique(dataset.input_labels, return_counts=True)
+#     print(counts)

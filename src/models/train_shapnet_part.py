@@ -7,11 +7,11 @@
 #
 # ----------------------------------------------------------------------------------------------------------------------
 #
-#      Callable script to start a training on ShapeNetPart dataset
+#      Callable script to start a training on S3DIS dataset
 #
 # ----------------------------------------------------------------------------------------------------------------------
 #
-#      Hugues THOMAS - 11/06/2018
+#      Hugues THOMAS - 06/03/2020
 #
 
 
@@ -21,20 +21,20 @@
 #       \**********************************/
 #
 
-
 # Common libs
-import time
+import signal
 import os
-import sys
-
-# Custom libs
-from src.config.config import Config
-from src.models.trainer import ModelTrainer
-from src.models.architectures import KPFCNN
 
 # Dataset
 from src.features.shapenet_part import *
 from torch.utils.data import DataLoader
+
+from src.config.config import Config
+from src.models.trainer import ModelTrainer
+from src.models.architectures import KPFCNN
+
+import multiprocessing
+import argparse
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -42,7 +42,6 @@ from torch.utils.data import DataLoader
 #           Config Class
 #       \******************/
 #
-
 
 class ShapeNetPartConfig(Config):
     """
@@ -53,15 +52,14 @@ class ShapeNetPartConfig(Config):
     # Dataset parameters
     ####################
 
-    # Dataset name in the format 'ShapeNetPart_Object' to segment an object class independently or 'ShapeNetPart_multi'
-    # to segment all objects with a single model.
-    dataset = 'ShapeNetPart_multi'
+    # Dataset name
+    dataset = 'ShapeNetPart'
 
-    # Number of classes in the dataset (This value is overwritten by dataset class when initiating input pipeline).
+    # Number of classes in the dataset (This value is overwritten by dataset class when Initializating dataset).
     num_classes = None
 
     # Type of task performed on this dataset (also overwritten)
-    network_model = None
+    dataset_task = ''
 
     # Number of CPU threads for the input pipeline
     input_threads = 32
@@ -71,91 +69,117 @@ class ShapeNetPartConfig(Config):
     #########################
 
     # Define layers
-    architecture = ['simple',
-                    'resnetb',
-                    'resnetb_strided',
-                    'resnetb',
-                    'resnetb_strided',
-                    'resnetb_deformable',
-                    'resnetb_deformable_strided',
-                    'resnetb_deformable',
-                    'resnetb_deformable_strided',
-                    'resnetb_deformable',
-                    'nearest_upsample',
-                    'unary',
-                    'nearest_upsample',
-                    'unary',
-                    'nearest_upsample',
-                    'unary',
-                    'nearest_upsample',
-                    'unary']
+    architecture = [
+        'simple',
+        'resnetb',
+        'resnetb_strided',
+        'resnetb',
+        'resnetb',
+        'resnetb_strided',
+        'resnetb_deformable',
+        'resnetb_deformable',
+        'resnetb_deformable_strided',
+        'resnetb_deformable',
+        'resnetb_deformable',
+        'resnetb_deformable_strided',
+        'resnetb_deformable',
+        'resnetb_deformable',
+        'nearest_upsample',
+        'unary',
+        'nearest_upsample',
+        'unary',
+        'nearest_upsample',
+        'unary',
+        'nearest_upsample',
+        'unary'
+    ]
 
-    # KPConv specific parameters
+    ###################
+    # KPConv parameters
+    ###################
+
+    # Radius of the input sphere
+    in_radius = 1.0
+
+    # Number of kernel points
     num_kernel_points = 15
-    first_subsampling_dl = 0.02
 
-    # Density of neighborhoods for deformable convs (which need bigger radiuses). For normal conv we use KP_extent
-    density_parameter = 5.0
+    # Size of the first subsampling grid in meter
+    first_subsampling_dl = 0.03
 
-    # Influence function of KPConv in ('constant', 'linear', gaussian)
+    # Radius of convolution in "number grid cell". (2.5 is the standard value)
+    conv_radius = 2.5
+
+    # Radius of deformable convolution in "number grid cell". Larger so that deformed kernel can spread out
+    deform_radius = 6.0
+
+    # Radius of the area of influence of each kernel point in "number grid cell". (1.0 is the standard value)
+    KP_extent = 1.2
+
+    # Behavior of convolutions in ('constant', 'linear', 'gaussian')
     KP_influence = 'linear'
-    KP_extent = 1.0
 
     # Aggregation function of KPConv in ('closest', 'sum')
-    convolution_mode = 'sum'
-
-    # Can the network learn modulations in addition to deformations
-    modulated = False
-
-    # Offset loss
-    # 'permissive' only constrains offsets inside the big radius
-    # 'fitting' helps deformed kernels to adapt to the geometry by penalizing distance to input points
-    offsets_loss = 'fitting'
-    offsets_decay = 0.1
+    aggregation_mode = 'sum'
 
     # Choice of input features
-    in_features_dim = 4
+    first_features_dim = 128
+    in_features_dim = 2
+
+    # Can the network learn modulations
+    modulated = False
 
     # Batch normalization parameters
     use_batch_norm = True
-    batch_norm_momentum = 0.98
+    batch_norm_momentum = 0.02
+
+    # Deformable offset loss
+    # 'point2point' fitting geometry by penalizing distance from deform point to input points
+    # 'point2plane' fitting geometry by penalizing distance from deform point to input point triplet (not implemented)
+    deform_fitting_mode = 'point2point'
+    deform_fitting_power = 1.0  # Multiplier for the fitting/repulsive loss
+    deform_lr_factor = 0.1  # Multiplier for learning rate applied to the deformations
+    repulse_extent = 1.2  # Distance of repulsion for deformed kernel points
 
     #####################
     # Training parameters
     #####################
 
     # Maximal number of epochs
-    max_epoch = 500
+    max_epoch = 30
 
     # Learning rate management
     learning_rate = 1e-2
     momentum = 0.98
-    lr_decays = {i: 0.1 ** (1 / 80) for i in range(1, max_epoch)}
+    lr_decays = {i: 0.1 ** (1 / 150) for i in range(1, max_epoch)}
     grad_clip_norm = 100.0
 
     # Number of batch
-    batch_num = 16
+    batch_num = 3
 
-    # Number of steps per epochs (cannot be None for this dataset)
-    epoch_steps = None
+    # Number of steps per epochs
+    epoch_steps = 300
 
     # Number of validation examples per epoch
     validation_size = 50
 
-    # Number of epoch between each snapshot
-    snapshot_gap = 50
+    # Number of epoch between each checkpoint
+    checkpoint_gap = 50
 
     # Augmentations
     augment_scale_anisotropic = True
-    augment_symmetries = [False, False, False]
-    augment_rotation = 'none'
-    augment_scale_min = 0.9
-    augment_scale_max = 1.1
+    augment_symmetries = [True, False, False]
+    augment_rotation = 'vertical'
+    augment_scale_min = 0.8
+    augment_scale_max = 1.2
     augment_noise = 0.001
-    augment_occlusion = 'none'
+    augment_color = 0.8
 
-    # Whether to use loss averaged on all points, or averaged per batch.
-    batch_averaged_loss = False
+    # The way we balance segmentation loss
+    #   > 'none': Each point in the whole batch has the same contribution.
+    #   > 'class': Each class has the same contribution (points are weighted according to class balance)
+    #   > 'batch': Each cloud in the batch has the same contribution (points are weighted according cloud sizes)
+    segloss_balance = 'none'
 
     # Do we nee to save convergence
     saving = True
@@ -168,21 +192,17 @@ class ShapeNetPartConfig(Config):
 #       \***************/
 #
 
-
 if __name__ == '__main__':
 
-    ##########################
-    # Initiate the environment
-    ##########################
+    ############################
+    # Initialize the environment
+    ############################
 
-    # Choose which gpu to use
+    # Set which gpu is going to be used
     GPU_ID = '0'
 
     # Set GPU visible device
     os.environ['CUDA_VISIBLE_DEVICES'] = GPU_ID
-
-    # Enable/Disable warnings (set level to '0'/'3')
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
     ###############
     # Previous chkp
@@ -212,34 +232,16 @@ if __name__ == '__main__':
     else:
         chosen_chkp = None
 
-    ###########################
-    # Load the model parameters
-    ###########################
-
-    config = ShapeNetPartConfig()
-
     ##############
     # Prepare Data
     ##############
 
     print()
-    print('Dataset Preparation')
-    print('*******************')
-
-    # # Initiate dataset configuration
-    # dataset = ShapeNetPartDataset(config.dataset.split('_')[1], config.input_threads)
-    #
-    # # Create subsampled input clouds
-    # dl0 = config.first_subsampling_dl
-    # dataset.load_subsampled_clouds(dl0)
-    #
-    # # Initialize input pipelines
-    # dataset.init_input_pipeline(config)
-    #
-    # # Test the input pipeline alone with this debug function
-    # # dataset.check_input_pipeline_timing(config)
+    print('Data Preparation')
+    print('****************')
 
     # Initialize configuration class
+    config = ShapeNetPartConfig()
     if previous_training_path:
         config.load(os.path.join('results', previous_training_path))
         config.saving_path = None
@@ -249,26 +251,24 @@ if __name__ == '__main__':
         config.saving_path = sys.argv[1]
 
     # Initialize datasets
-    training_dataset = ShapeNetPartDataset(config, set='training',
-                                           use_potentials=True)
-    test_dataset = ShapeNetPartDataset(config, set='validation',
-                                       use_potentials=True)
+    training_dataset = ShapeNetPartDataset(config, set='training', use_potentials=True)
+    test_dataset = ShapeNetPartDataset(config, set='validation', use_potentials=True)
 
     # Initialize samplers
-    training_sampler = (training_dataset)
-    test_sampler = ShapeNetParSampler(test_dataset)
+    training_sampler = ShapeNetPartSampler(training_dataset)
+    test_sampler = ShapeNetPartSampler(test_dataset)
 
     # Initialize the dataloader
     training_loader = DataLoader(training_dataset,
                                  batch_size=1,
                                  sampler=training_sampler,
-                                 collate_fn=ShapeNetParCollate,
+                                 collate_fn=ShapeNetPartCollate,
                                  num_workers=config.input_threads,
                                  pin_memory=True)
     test_loader = DataLoader(test_dataset,
                              batch_size=1,
                              sampler=test_sampler,
-                             collate_fn=ShapeNetParCollate,
+                             collate_fn=ShapeNetPartCollate,
                              num_workers=config.input_threads,
                              pin_memory=True)
 
@@ -281,17 +281,13 @@ if __name__ == '__main__':
     # debug_timing(test_dataset, test_loader)
     # debug_upsampling(training_dataset, training_loader)
 
-    ##############
-    # Define Model
-    ##############
+    print('\nModel Preparation')
+    print('*****************')
 
-    print('Creating Model')
-    print('**************\n')
+    # Define network model
     t1 = time.time()
-
-    # Model class
     net = KPFCNN(config, training_dataset.label_values,
-                   training_dataset.ignored_labels)
+                 training_dataset.ignored_labels)
 
     debug = False
     if debug:
