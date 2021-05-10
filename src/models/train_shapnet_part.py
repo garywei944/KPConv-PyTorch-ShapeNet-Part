@@ -62,7 +62,7 @@ class ShapeNetPartConfig(Config):
     dataset_task = ''
 
     # Number of CPU threads for the input pipeline
-    input_threads = 32
+    input_threads = multiprocessing.cpu_count()
 
     #########################
     # Architecture definition
@@ -146,7 +146,7 @@ class ShapeNetPartConfig(Config):
     #####################
 
     # Maximal number of epochs
-    max_epoch = 30
+    max_epoch = 500
 
     # Learning rate management
     learning_rate = 1e-5
@@ -158,7 +158,7 @@ class ShapeNetPartConfig(Config):
     batch_num = 12
 
     # Number of steps per epochs
-    epoch_steps = 300
+    epoch_steps = 500
 
     # Number of validation examples per epoch
     validation_size = 50

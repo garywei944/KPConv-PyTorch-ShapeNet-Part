@@ -159,7 +159,12 @@ class ShapeNetPartDataset(PointCloudDataset):
 
         # List of training files
         self.all_splits = np.arange(len(files))
+
+        # Make sure that training set and validation set are disjoint
+        np.random.seed(666)
         np.random.shuffle(self.all_splits)
+        np.random.seed(None)
+
         train_idx, self.validation_split = np.split(self.all_splits, [len(self.all_splits) * 8 // 10])
 
         if self.set == 'training':
