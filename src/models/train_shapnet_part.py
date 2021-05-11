@@ -105,7 +105,7 @@ class ShapeNetPartConfig(Config):
     ###################
 
     # Radius of the input sphere
-    in_radius = 0.15
+    in_radius = args.in_radius
 
     # Number of kernel points
     num_kernel_points = 8
