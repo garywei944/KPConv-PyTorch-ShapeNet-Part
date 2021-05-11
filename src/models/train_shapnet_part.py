@@ -36,6 +36,12 @@ from src.models.architectures import KPFCNN
 import multiprocessing
 import argparse
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--in-radius', type=float, default=0.05)
+parser.add_argument('-c', '--ctg', type=str, default='Airplane')
+
+args = parser.parse_args()
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 #
@@ -99,10 +105,10 @@ class ShapeNetPartConfig(Config):
     ###################
 
     # Radius of the input sphere
-    in_radius = 5e-2
+    in_radius = 0.15
 
     # Number of kernel points
-    num_kernel_points = 15
+    num_kernel_points = 8
 
     # Size of the first subsampling grid in meter
     first_subsampling_dl = 0.03
@@ -146,7 +152,7 @@ class ShapeNetPartConfig(Config):
     #####################
 
     # Maximal number of epochs
-    max_epoch = 500
+    max_epoch = 300
 
     # Learning rate management
     learning_rate = 1e-5
@@ -158,7 +164,7 @@ class ShapeNetPartConfig(Config):
     batch_num = 12
 
     # Number of steps per epochs
-    epoch_steps = 500
+    epoch_steps = 300
 
     # Number of validation examples per epoch
     validation_size = 50
@@ -246,13 +252,17 @@ if __name__ == '__main__':
         config.load(os.path.join('results', previous_training_path))
         config.saving_path = None
 
-    # Get path from argument if given
-    if len(sys.argv) > 1:
-        config.saving_path = sys.argv[1]
+    # # Get path from argument if given
+    # if len(sys.argv) > 1:
+    #     config.saving_path = sys.argv[1]
 
     # Initialize datasets
-    training_dataset = ShapeNetPartDataset(config, set='training', use_potentials=True)
-    test_dataset = ShapeNetPartDataset(config, set='validation', use_potentials=True)
+    training_dataset = ShapeNetPartDataset(config, set='training',
+                                           use_potentials=True,
+                                           train_category=args.ctg)
+    test_dataset = ShapeNetPartDataset(config, set='validation',
+                                       use_potentials=True,
+                                       train_category=args.ctg)
 
     # Initialize samplers
     training_sampler = ShapeNetPartSampler(training_dataset)
