@@ -37,7 +37,7 @@ import multiprocessing
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--in-radius', type=float, default=0.05)
+parser.add_argument('--in-radius', type=float, default=0.15)
 parser.add_argument('-c', '--ctg', type=str, default='Airplane')
 
 args = parser.parse_args()
