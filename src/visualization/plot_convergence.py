@@ -721,15 +721,21 @@ def experiment_name_1():
     end = 'Log_2022-05-11_12-00-00'
 
     # Name of the result path
-    res_path = 'results'
+    res_path = 'results/feature_dim'
 
     # Gather logs and sort by date
     logs = np.sort(
         [join(res_path, l) for l in listdir(res_path) if start <= l <= end])
 
     # Give names to the logs (for plot legends)
-    logs_names = ['name_log_1',
-                  'name_log_2']
+    # in_radius
+    # logs_names = ['in_radius = 0.15',
+    #               'in_radius = 0.05',
+    #               'in_radius = 0.25']
+
+    # feature_dim
+    logs_names = ['in_feature_dim = 5',
+                  'in_feature_dim = 1']
 
     # safe check log names
     logs_names = np.array(logs_names[:len(logs)])
@@ -782,7 +788,8 @@ if __name__ == '__main__':
     if config.dataset_task == 'classification':
         compare_convergences_classif(logs, logs_names)
     elif config.dataset_task == 'cloud_segmentation':
-        if config.dataset.startswith('S3DIS'):
+        if config.dataset.startswith('S3DIS') or config.dataset.startswith(
+                'ShapeNetPart'):
             dataset = S3DISDataset(config, load_data=False)
             compare_convergences_segment(dataset, logs, logs_names)
     # elif config.dataset_task == 'slam_segmentation':

@@ -75,14 +75,19 @@ class ShapeNetPartDataset(PointCloudDataset):
             # 'Earphone': '03261776',
             # 'Guitar': '03467517',
             # 'Knife': '03624134',
+
             'Lamp': '03636649',
+
+            # The following 6 doesn't have enough samples to learn the network.
             # 'Laptop': '03642806',
             # 'Motorbike': '03790512',
             # 'Mug': '03797390',
             # 'Pistol': '03948459',
             # 'Rocket': '04099429',
             # 'Skateboard': '04225987',
-            'Table': '04379243'
+
+            # Table: RuntimeError: unable to open shared memory object </torch_11335_3260533073> in read-write mode
+            # 'Table': '04379243'
         }
 
         # Number of segmentations of each category
@@ -96,7 +101,7 @@ class ShapeNetPartDataset(PointCloudDataset):
             'Earphone': 2,
             'Guitar': 3,
             'Knife': 2,
-            'Lamp': 3,
+            'Lamp': 4,
             'Laptop': 1,
             'Motorbike': 5,
             'Mug': 1,
@@ -165,7 +170,8 @@ class ShapeNetPartDataset(PointCloudDataset):
         np.random.shuffle(self.all_splits)
         np.random.seed(None)
 
-        train_idx, self.validation_split = np.split(self.all_splits, [len(self.all_splits) * 8 // 10])
+        train_idx, self.validation_split = np.split(self.all_splits, [
+            len(self.all_splits) * 8 // 10])
 
         if self.set == 'training':
             self.cloud_names = files[train_idx]

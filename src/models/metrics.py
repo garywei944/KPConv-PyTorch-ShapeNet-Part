@@ -42,12 +42,14 @@ def fast_confusion(true, pred, label_values=None):
     """
 
     # Ensure data is in the right format
-    true = np.squeeze(true)
-    pred = np.squeeze(pred)
-    if len(true.shape) != 1:
-        raise ValueError('Truth values are stored in a {:d}D array instead of 1D array'. format(len(true.shape)))
-    if len(pred.shape) != 1:
-        raise ValueError('Prediction values are stored in a {:d}D array instead of 1D array'. format(len(pred.shape)))
+    # true = np.squeeze(true)
+    # pred = np.squeeze(pred)
+    true = true.reshape((-1,))
+    pred = pred.reshape((-1,))
+    # if len(true.shape) != 1:
+    #     raise ValueError('Truth values are stored in a {:d}D array instead of 1D array'. format(len(true.shape)))
+    # if len(pred.shape) != 1:
+    #     raise ValueError('Prediction values are stored in a {:d}D array instead of 1D array'. format(len(pred.shape)))
     if true.dtype not in [np.int32, np.int64]:
         raise ValueError('Truth values are {:s} instead of int32 or int64'.format(true.dtype))
     if pred.dtype not in [np.int32, np.int64]:
