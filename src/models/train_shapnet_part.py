@@ -38,6 +38,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--in-radius', type=float, default=0.15)
+parser.add_argument('--feature-dim', type=int, default=5)
 parser.add_argument('-c', '--ctg', type=str, default='Airplane')
 
 args = parser.parse_args()
@@ -130,7 +131,7 @@ class ShapeNetPartConfig(Config):
 
     # Choice of input features
     first_features_dim = 128
-    in_features_dim = 5
+    in_features_dim = args.feature_dim
 
     # Can the network learn modulations
     modulated = False
