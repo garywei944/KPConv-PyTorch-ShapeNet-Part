@@ -598,40 +598,40 @@ class ModelTrainer:
         mIoU = 100 * np.mean(IoUs)
         print('{:s} mean IoU = {:.1f}%'.format(config.dataset, mIoU))
 
-        # Save predicted cloud occasionally
-        if config.saving and (self.epoch + 1) % config.checkpoint_gap == 0:
-            val_path = join(config.saving_path, 'val_preds_{:d}'.format(self.epoch + 1))
-            if not exists(val_path):
-                makedirs(val_path)
-            files = val_loader.dataset.files
-            for i, file_path in enumerate(files):
-
-                # Get points
-                points = val_loader.dataset.load_evaluation_points(file_path)
-
-                # Get probs on our own ply points
-                sub_probs = self.validation_probs[i]
-
-                # Insert false columns for ignored labels
-                for l_ind, label_value in enumerate(val_loader.dataset.label_values):
-                    if label_value in val_loader.dataset.ignored_labels:
-                        sub_probs = np.insert(sub_probs, l_ind, 0, axis=1)
-
-                # Get the predicted labels
-                sub_preds = val_loader.dataset.label_values[np.argmax(sub_probs, axis=1).astype(np.int32)]
-
-                # Reproject preds on the evaluations points
-                preds = (sub_preds[val_loader.dataset.test_proj[i]]).astype(np.int32)
-
-                # Path of saved validation file
-                cloud_name = file_path.split('/')[-1]
-                val_name = join(val_path, cloud_name)
-
-                # Save file
-                labels = val_loader.dataset.validation_labels[i].astype(np.int32)
-                write_ply(val_name,
-                          [points, preds, labels],
-                          ['x', 'y', 'z', 'preds', 'class'])
+        # # Save predicted cloud occasionally
+        # if config.saving and (self.epoch + 1) % config.checkpoint_gap == 0:
+        #     val_path = join(config.saving_path, 'val_preds_{:d}'.format(self.epoch + 1))
+        #     if not exists(val_path):
+        #         makedirs(val_path)
+        #     files = val_loader.dataset.files
+        #     for i, file_path in enumerate(files):
+        #
+        #         # Get points
+        #         points = val_loader.dataset.load_evaluation_points(file_path)
+        #
+        #         # Get probs on our own ply points
+        #         sub_probs = self.validation_probs[i]
+        #
+        #         # Insert false columns for ignored labels
+        #         for l_ind, label_value in enumerate(val_loader.dataset.label_values):
+        #             if label_value in val_loader.dataset.ignored_labels:
+        #                 sub_probs = np.insert(sub_probs, l_ind, 0, axis=1)
+        #
+        #         # Get the predicted labels
+        #         sub_preds = val_loader.dataset.label_values[np.argmax(sub_probs, axis=1).astype(np.int32)]
+        #
+        #         # Reproject preds on the evaluations points
+        #         preds = (sub_preds[val_loader.dataset.test_proj[i]]).astype(np.int32)
+        #
+        #         # Path of saved validation file
+        #         cloud_name = file_path.split('/')[-1]
+        #         val_name = join(val_path, cloud_name)
+        #
+        #         # Save file
+        #         labels = val_loader.dataset.validation_labels[i].astype(np.int32)
+        #         write_ply(val_name,
+        #                   [points, preds, labels],
+        #                   ['x', 'y', 'z', 'preds', 'class'])
 
         # Display timings
         t7 = time.time()
