@@ -366,14 +366,14 @@ class ShapeNetPartDataset(PointCloudDataset):
             n = input_inds.shape[0]
 
             # Collect labels and colors
-            # input_points = (points[input_inds] - center_point).astype(
-            #     np.float32)
+            input_points = (points[input_inds] - center_point).astype(
+                np.float32)
             input_colors = self.input_colors[cloud_ind][input_inds]
             if self.set in ['test', 'ERF']:
                 input_labels = np.zeros(input_points.shape[0])
             else:
-                print(cloud_ind, input_inds.shape,
-                      self.input_labels[cloud_ind].shape)
+                # print(cloud_ind, input_inds.shape,
+                #       self.input_labels[cloud_ind].shape)
                 input_labels = self.input_labels[cloud_ind][input_inds]
                 input_labels = np.array(
                     [self.label_to_idx[l] for l in input_labels])
