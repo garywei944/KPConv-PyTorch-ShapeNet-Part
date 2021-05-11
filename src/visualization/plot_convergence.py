@@ -728,19 +728,29 @@ def experiment_name_1():
         [join(res_path, l) for l in listdir(res_path) if start <= l <= end])
 
     # Give names to the logs (for plot legends)
-    # in_radius
+    # # in_radius
     # logs_names = ['in_radius = 0.15',
-    #               'in_radius = 0.05',
-    #               'in_radius = 0.25']
+    #               'in_radius = 0.25',
+    #               'in_radius = 0.05']
 
-    # feature_dim
+    # # Categories
+    # logs_names = ['Airplane: in_radius=0.25',
+    #               'Lamp:     in_radius=0.2',
+    #               'Chair:      in_radius=0.2']
+
+    # # feature_dim
     logs_names = ['in_feature_dim = 5',
-                  'in_feature_dim = 1']
+                  'in_feature_dim = 1',
+                  'in_feature_dim = 4']
 
     # safe check log names
     logs_names = np.array(logs_names[:len(logs)])
 
-    return logs, logs_names
+    # order = [2, 0, 1] # radius
+    # order = [0, 1, 2]
+    order = [0, 2, 1]
+
+    return logs[order], logs_names[order]
 
 
 # ----------------------------------------------------------------------------------------------------------------------
