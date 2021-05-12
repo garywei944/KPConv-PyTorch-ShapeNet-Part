@@ -295,7 +295,7 @@ class KPFCNN(nn.Module):
 
         self.head_mlp = UnaryBlock(out_dim, config.first_features_dim, False, 0)
         self.head_softmax = UnaryBlock(config.first_features_dim, self.C, False, 0)
-        # self.softmax_layer = nn.LogSoftmax(dim=-1)
+        self.softmax_layer = nn.LogSoftmax(dim=-1)
 
         ################
         # Network Losses
@@ -307,12 +307,12 @@ class KPFCNN(nn.Module):
         # Choose segmentation loss
         if len(config.class_w) > 0:
             class_w = torch.from_numpy(np.array(config.class_w, dtype=np.float32))
-            self.criterion = torch.nn.CrossEntropyLoss(weight=class_w, ignore_index=-1)
-            # self.criterion = torch.nn.MultiLabelSoftMarginLoss()
+            # self.criterion = torch.nn.CrossEntropyLoss(weight=class_w, ignore_index=-1)
+            self.criterion = torch.nn.MultiLabelSoftMarginLoss()
             # self.criterion = torch.nn.MultiMarginLoss()
         else:
-            self.criterion = torch.nn.CrossEntropyLoss(ignore_index=-1)
-            # self.criterion = torch.nn.MultiLabelSoftMarginLoss()
+            # self.criterion = torch.nn.CrossEntropyLoss(ignore_index=-1)
+            self.criterion = torch.nn.MultiLabelSoftMarginLoss()
             # self.criterion = torch.nn.MultiMarginLoss()
         self.deform_fitting_mode = config.deform_fitting_mode
         self.deform_fitting_power = config.deform_fitting_power
@@ -346,7 +346,7 @@ class KPFCNN(nn.Module):
         x = self.head_softmax(x, batch)
         
         # log_softmax: the previous one actually never had a softmax it just used nn.CrossEntropyLoss
-        # x = self.softmax_layer(x)
+        x = self.softmax_layer(x)
 
         return x
 
@@ -401,24 +401,3 @@ class KPFCNN(nn.Module):
         correct = (predicted == target).sum().item()
 
         return correct / total
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
