@@ -15,7 +15,7 @@ Basically, I contributed more to the coding part.
 ### Genglin Liu
 I wrote network modification that includes
 
-1. An attempt to replace the cross-entropy network loss with multiclass soft margin loss and KL divergence ([`src/models/architecture_alternative_loss.py`](src/models/architecture_alternative_loss.py#L298) line 298-384)
+1. An attempt to replace the cross-entropy network loss with multiclass soft margin loss and KL divergence ([`src/models/architecture_alternative_losses.py`](src/models/architecture_alternative_losses.py#L298) line 298-384)
 2. An attempt to add dropout layer with probablity 0.1 and 0.2 inside each unary block in the encoder part of the network. ([`src/models/blocks_with_dropout.py`](src/models/blocks_with_dropout.py#L469) line 469-500)
 3. I was responsible for writing up the written report in LaTeX and compile all the experiments we conducted into a manuscript). I also wrote the body of the slideshow presentation in the video demo
 4. I also wrote miscellaneous scripts to train models on remote GPUs.
