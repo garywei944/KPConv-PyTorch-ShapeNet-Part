@@ -7,7 +7,10 @@ Apply KPConv (Kernel point convolution) for the task of shape segmentation based
 The project is forked and developed based on [HuguesTHOMAS/KPConv-PyTorch](https://github.com/HuguesTHOMAS/KPConv-PyTorch).
 
 ### Gary Wei
-TODO
+Basically, I contributed more to the coding part.
+* I folked the sorce codes from [HuguesTHOMAS/KPConv-PyTorch](https://github.com/HuguesTHOMAS/KPConv-PyTorch) and re-construct it following the [Cookiecutter Data Science](https://drivendata.github.io/cookiecutter-data-science/#starting-a-new-project)'s reproducible project structure.
+* I implemented all the pipeline for ShapeNet-Part dataset including preprocessing data, training and testing scripts and plotting the results.
+* Tuning the hyper-parameters for the ShapeNet-Part (consumes a lot of time and gpu computing power).
 
 ### Genglin Liu
 TODO
@@ -110,6 +113,9 @@ In [`plot_convergence.py`](src/visualization/plot_convergence.py), you will find
 python3 -m src.visualization.plot_convergence
 ```
 
+
+## The saved results
+All results are saved in the `results` folder. For this project, the `Log_2021-05-11_06-21-18`
 
 ## References
 * [KPConv: Flexible and Deformable Convolution for Point Clouds](https://arxiv.org/pdf/1904.08889.pdf)
