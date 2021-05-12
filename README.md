@@ -1,14 +1,24 @@
 # cs674_final_project
 Apply KPConv (Kernel point convolution) for the task of shape segmentation based on the ShapeNet-Part dataset
 
+[GitHub Repo](https://github.com/garywei944/cs674_final_project)
+
 ## Contribution
 The project is forked and developed based on [HuguesTHOMAS/KPConv-PyTorch](https://github.com/HuguesTHOMAS/KPConv-PyTorch).
 
 ### Gary Wei
-TODO
+Basically, I contributed more to the coding part.
+* I folked the sorce codes from [HuguesTHOMAS/KPConv-PyTorch](https://github.com/HuguesTHOMAS/KPConv-PyTorch) and re-construct it following the [Cookiecutter Data Science](https://drivendata.github.io/cookiecutter-data-science/#starting-a-new-project)'s reproducible project structure.
+* I implemented all the pipeline for ShapeNet-Part dataset (not implemented in the Hugues' pytorch version implementation) including preprocessing data, training and testing scripts and plotting the results.
+* Tuning the hyper-parameters for the ShapeNet-Part (consumes a lot of time and gpu computing power).
 
 ### Genglin Liu
-TODO
+I wrote network modification that includes
+
+1. An attempt to replace the cross-entropy network loss with multiclass soft margin loss and KL divergence ([`src/models/architecture_alternative_loss.py`](src/models/architecture_alternative_loss.py#L298) line 298-384)
+2. An attempt to add dropout layer with probablity 0.1 and 0.2 inside each unary block in the encoder part of the network. ([`src/models/blocks_with_dropout.py`](src/models/blocks_with_dropout.py#L469) line 469-500)
+3. I was responsible for writing up the written report in LaTeX and compile all the experiments we conducted into a manuscript). I also wrote the body of the slideshow presentation in the video demo
+4. I also wrote miscellaneous scripts to train models on remote GPUs.
 
 ## Installation
 Please refer to [INSTALL.md](https://github.com/HuguesTHOMAS/KPConv-PyTorch/blob/master/INSTALL.md) and [setup_env.sh](setup_env.sh) to install all dependencies.
@@ -108,6 +118,9 @@ In [`plot_convergence.py`](src/visualization/plot_convergence.py), you will find
 python3 -m src.visualization.plot_convergence
 ```
 
+
+## The saved results
+All results are saved in the `results` folder. For this project, the `Log_2021-05-11_06-21-18`
 
 ## References
 * [KPConv: Flexible and Deformable Convolution for Point Clouds](https://arxiv.org/pdf/1904.08889.pdf)
