@@ -487,7 +487,7 @@ class UnaryBlock(nn.Module):
         self.batch_norm = BatchNormBlock(out_dim, self.use_bn, self.bn_momentum)
         if not no_relu:
             self.leaky_relu = nn.LeakyReLU(0.1)
-        # self.dropout = nn.Dropout(p=0.1)
+        self.dropout = nn.Dropout(p=0.2)
         return
 
     def forward(self, x, batch=None):
@@ -495,7 +495,7 @@ class UnaryBlock(nn.Module):
         x = self.batch_norm(x)
         if not self.no_relu:
             x = self.leaky_relu(x)
-        # x = self.dropout(x)
+        x = self.dropout(x)
         return x
 
     def __repr__(self):
@@ -693,4 +693,3 @@ class MaxPoolBlock(nn.Module):
 
     def forward(self, x, batch):
         return max_pool(x, batch.pools[self.layer_ind + 1])
-
