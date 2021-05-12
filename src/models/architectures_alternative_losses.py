@@ -14,7 +14,7 @@
 #      Hugues THOMAS - 06/03/2020
 #
 
-from src.models.blocks import *
+from src.models.blocks_with_dropout import *
 import numpy as np
 
 

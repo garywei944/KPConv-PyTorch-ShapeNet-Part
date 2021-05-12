@@ -31,7 +31,7 @@ from torch.utils.data import DataLoader
 
 from src.config.config import Config
 from src.models.trainer import ModelTrainer
-from src.models.architectures import KPFCNN
+from src.models.architectures_alternative_losses import KPFCNN
 
 import multiprocessing
 import argparse

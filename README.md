@@ -1,6 +1,8 @@
 # cs674_final_project
 Apply KPConv (Kernel point convolution) for the task of shape segmentation based on the ShapeNet-Part dataset
 
+[GitHub Repo](https://github.com/garywei944/cs674_final_project)
+
 ## Contribution
 The project is forked and developed based on [HuguesTHOMAS/KPConv-PyTorch](https://github.com/HuguesTHOMAS/KPConv-PyTorch).
 
