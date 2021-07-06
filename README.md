@@ -1,4 +1,4 @@
-# cs674_final_project
+# KPConv PyTorch ShapeNet-Part
 Apply KPConv (Kernel point convolution) for the task of shape segmentation based on the ShapeNet-Part dataset
 
 [GitHub Repo](https://github.com/garywei944/cs674_final_project)
